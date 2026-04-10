@@ -101,6 +101,22 @@
         .botones button.secundario:hover {
             background: #5c636a;
         }
+
+        .btn-accion {
+            display: block;
+            background: #1565c0;
+            color: white;
+            padding: 10px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .btn-accion:hover {
+            background: #0d47a1;
+        }
     </style>
 </head>
 <body>
@@ -108,16 +124,23 @@
 <div class="layout">
     <div class="sidebar">
         <div class="titulo">Proyecto ADIE</div>
+        <div style="margin-bottom:14px;">
+    <a href="/analisis/pais/" class="btn-accion">Ver análisis global país</a>
+</div>
 
         <div class="info" id="info-region">
             Haz click en una región
         </div>
+
+        <div id="acciones-region-comuna" class="botones" style="margin-top:12px;"></div>
 
         <div class="seccion">
             <h3 style="margin:0 0 10px 0;">Hospital seleccionado</h3>
             <div class="info" id="info-hospital">
                 Haz click en un hospital
             </div>
+
+            <div id="acciones-hospital" class="botones" style="margin-top:12px;"></div>
 
             <div class="botones">
                 <button id="btn-salientes">Ver traslados salientes</button>
@@ -146,6 +169,8 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
 
 const infoRegion = document.getElementById("info-region");
 const infoHospital = document.getElementById("info-hospital");
+const accionesRegionComuna = document.getElementById("acciones-region-comuna");
+const accionesHospital = document.getElementById("acciones-hospital");
 const btnSalientes = document.getElementById("btn-salientes");
 const btnEntrantes = document.getElementById("btn-entrantes");
 const btnLimpiar = document.getElementById("btn-limpiar");
@@ -159,6 +184,8 @@ let capaComunas = null;
 let capaHospitales = null;
 let capaFlujos = null;
 let hospitalSeleccionado = null;
+let comunaSeleccionada = null;
+let regionSeleccionada = null;
 let trasladosGlobal = [];
 
 function color(v) {
@@ -173,9 +200,7 @@ function color(v) {
 
 function radioHospital(total) {
     const t = Number(total || 0);
-
     if (t <= 0) return 4;
-
     return Math.max(5, Math.min(22, Math.sqrt(t) / 18 + 3));
 }
 
@@ -201,6 +226,9 @@ function estiloRegion(feature) {
 }
 
 function mostrarRegion(d) {
+    regionSeleccionada = d;
+    comunaSeleccionada = null;
+
     infoRegion.innerHTML = `
         <b>${d.REGION}</b><br><br>
         Población: ${Number(d.poblacion).toLocaleString('es-CL')}<br>
@@ -209,9 +237,15 @@ function mostrarRegion(d) {
         % población afectada: ${Number(d.porcentaje_poblacion).toFixed(3)}%<br>
         Tasa por 100.000: ${Number(d.tasa_100k).toFixed(2)}
     `;
+
+    accionesRegionComuna.innerHTML = `
+        <a href="/analisis/region/${d.codregion}/" class="btn-accion">Ver análisis completo de la región</a>
+    `;
 }
 
 function mostrarHospital(h) {
+    hospitalSeleccionado = h;
+
     const nombre = h.NOMBRE_HOSPITAL || 'Hospital';
     const comuna = h.COMUNA_GEO || 'Sin comuna';
     const region = h.REGION_GEO || 'Sin región';
@@ -224,6 +258,10 @@ function mostrarHospital(h) {
         Casos graves: ${Number(h.alta || 0).toLocaleString('es-CL')}<br>
         % graves entre pacientes: ${Number(h.porcentaje || 0).toFixed(2)}%<br>
         <span class="badge">Código: ${h.COD_HOSPITAL || 'N/D'}</span>
+    `;
+
+    accionesHospital.innerHTML = `
+        <a href="/analisis/hospital/${h.COD_HOSPITAL}/" class="btn-accion">Ver análisis completo del hospital</a>
     `;
 }
 
@@ -272,7 +310,6 @@ function dibujarFlujos(tipo) {
             !isNaN(latDestino) && !isNaN(lonDestino)
         ) {
             const colorFlujo = tipo === "salientes" ? "#1565c0" : "#2e7d32";
-
             const weight = grosorFlujo(t.cantidad) + 1;
 
             const midLat = (latOrigen + latDestino) / 2;
@@ -291,13 +328,6 @@ function dibujarFlujos(tipo) {
                 [latDestino, lonDestino]
             ];
 
-            const linea = L.polyline(puntosCurva, {
-                color: colorFlujo,
-                weight: weight,
-                opacity: 0.9,
-                lineCap: "round"
-            });
-
             const popupHtml = `
                 <b>${t.hospital_origen}</b><br>
                 → <b>${t.hospital_destino}</b><br><br>
@@ -305,6 +335,13 @@ function dibujarFlujos(tipo) {
                 Casos graves: ${Number(t.graves || 0).toLocaleString('es-CL')}<br>
                 % graves: ${Number(t.porcentaje_graves || 0).toFixed(2)}%
             `;
+
+            const linea = L.polyline(puntosCurva, {
+                color: colorFlujo,
+                weight: weight,
+                opacity: 0.9,
+                lineCap: "round"
+            });
 
             linea.bindPopup(popupHtml);
 
@@ -321,10 +358,6 @@ function dibujarFlujos(tipo) {
             `);
 
             marcadorCentro.bindPopup(popupHtml);
-
-            marcadorCentro.on("click", function() {
-                marcadorCentro.openPopup();
-            });
 
             linea.addTo(capaFlujos);
             marcadorCentro.addTo(capaFlujos);
@@ -399,6 +432,13 @@ function cargarComunasYHospitales(cod) {
                     layer.on({
                         mouseover: e => e.target.openTooltip(),
                         click: () => {
+                            comunaSeleccionada = d;
+
+                            accionesRegionComuna.innerHTML = `
+                                <a href="/analisis/region/${d.codregion}/" class="btn-accion">Ver análisis completo de la región</a>
+                                <a href="/analisis/comuna/${d.cod_comuna}/" class="btn-accion">Ver análisis completo de la comuna</a>
+                            `;
+
                             layer.bindPopup(`
                                 <b>${d.COMUNA_GEOJSON}</b><br>
                                 Población: ${Number(d.poblacion).toLocaleString('es-CL')}<br>
@@ -430,6 +470,8 @@ function cargarComunasYHospitales(cod) {
 
             limpiarFlujos();
             hospitalSeleccionado = null;
+            accionesHospital.innerHTML = "";
+            infoHospital.innerHTML = "Haz click en un hospital";
 
             capaHospitales = L.layerGroup();
 
@@ -462,7 +504,6 @@ function cargarComunasYHospitales(cod) {
                         `);
 
                         marker.on('click', function() {
-                            hospitalSeleccionado = h;
                             mostrarHospital(h);
 
                             marker.bindPopup(`
@@ -522,6 +563,7 @@ leyenda.onAdd = function() {
     div.innerHTML += `<div><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#1f77ff;border:1px solid #0b3d91;margin-right:6px;"></span>Hospitales</div>`;
     div.innerHTML += `<div style="margin-top:4px;"><span style="display:inline-block;width:18px;height:3px;background:#1565c0;margin-right:6px;"></span>Salientes</div>`;
     div.innerHTML += `<div style="margin-top:4px;"><span style="display:inline-block;width:18px;height:3px;background:#2e7d32;margin-right:6px;"></span>Entrantes</div>`;
+
     return div;
 };
 

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Análisis de comuna</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f4f8ff; color: #1f2d3d; }
+        .contenedor { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border-bottom: 1px solid #e8eef5; text-align: left; }
+        th { background: #eef4ff; }
+    </style>
+</head>
+<body>
+<div class="contenedor">
+    <a href="/">← Volver al mapa</a>
+    {% if encontrado %}
+        <h1>{{ comuna.COMUNA_GEOJSON }}</h1>
+        <div class="card">
+            <p><b>Región:</b> {{ comuna.REGION_GEOJSON }}</p>
+            <p><b>Población:</b> {{ comuna.poblacion }}</p>
+            <p><b>Pacientes:</b> {{ comuna.total }}</p>
+            <p><b>Casos graves:</b> {{ comuna.alta }}</p>
+            <p><b>% graves entre pacientes:</b> {{ comuna.porcentaje_severidad }}%</p>
+            <p><b>% población afectada:</b> {{ comuna.porcentaje_poblacion }}%</p>
+            <p><b>Tasa por 100.000:</b> {{ comuna.tasa_100k }}</p>
+        </div>
+
+        <div class="card">
+            <h3>Hospitales ubicados en la comuna</h3>
+            <table>
+                <thead><tr><th>Hospital</th><th>Pacientes</th><th>Graves</th><th>% graves</th></tr></thead>
+                <tbody>
+                {% for h in hospitales %}
+                    <tr><td>{{ h.NOMBRE_HOSPITAL }}</td><td>{{ h.total }}</td><td>{{ h.alta }}</td><td>{{ h.porcentaje }}%</td></tr>
+                {% empty %}
+                    <tr><td colspan="4">No hay hospitales georreferenciados en esta comuna.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <h1>Comuna no encontrada</h1>
+    {% endif %}
+</div>
+</body>
+</html>

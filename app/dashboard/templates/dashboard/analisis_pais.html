@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Análisis país</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f4f8ff;
+            color: #1f2d3d;
+        }
+
+        .contenedor {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .titulo {
+            font-size: 34px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .subtitulo {
+            color: #5c6c7d;
+            margin-bottom: 20px;
+        }
+
+        .grid-kpi {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+        }
+
+        .kpi-titulo {
+            color: #5c6c7d;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .kpi-valor {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #e8eef5;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #eef4ff;
+        }
+
+        a.boton {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #1565c0;
+            font-weight: bold;
+        }
+
+        @media (max-width: 1100px) {
+            .grid-kpi,
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="contenedor">
+    <a href="/" class="boton">← Volver al mapa</a>
+
+    <div class="titulo">Análisis global país</div>
+    <div class="subtitulo">Resumen nacional para orientar la exploración de regiones, comunas, hospitales y traslados</div>
+
+    <div class="grid-kpi">
+        <div class="card">
+            <div class="kpi-titulo">Población total</div>
+            <div class="kpi-valor">{{ total_poblacion }}</div>
+        </div>
+        <div class="card">
+            <div class="kpi-titulo">Pacientes totales</div>
+            <div class="kpi-valor">{{ total_pacientes }}</div>
+        </div>
+        <div class="card">
+            <div class="kpi-titulo">Casos graves</div>
+            <div class="kpi-valor">{{ total_graves }}</div>
+        </div>
+        <div class="card">
+            <div class="kpi-titulo">Traslados totales</div>
+            <div class="kpi-valor">{{ total_traslados }}</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>Top regiones con más casos graves</h3>
+            <canvas id="graficoRegiones"></canvas>
+        </div>
+        <div class="card">
+            <h3>Top comunas con más casos graves</h3>
+            <canvas id="graficoComunas"></canvas>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>Hospitales que más trasladan</h3>
+            <canvas id="graficoHospTras"></canvas>
+        </div>
+        <div class="card">
+            <h3>Top destinos de traslados</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hospital destino</th>
+                        <th>Traslados</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for x in top_destinos %}
+                    <tr>
+                        <td>{{ x.hospital_destino }}</td>
+                        <td>{{ x.cantidad }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>Top regiones</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Región</th>
+                        <th>Casos graves</th>
+                        <th>Pacientes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for x in top_regiones %}
+                    <tr>
+                        <td>{{ x.REGION }}</td>
+                        <td>{{ x.alta }}</td>
+                        <td>{{ x.total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>Top hospitales con más casos graves</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hospital</th>
+                        <th>Graves</th>
+                        <th>Pacientes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for x in top_hospitales_graves %}
+                    <tr>
+                        <td>{{ x.NOMBRE_HOSPITAL }}</td>
+                        <td>{{ x.alta }}</td>
+                        <td>{{ x.total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>Top comunas con más casos graves</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Comuna</th>
+                        <th>Graves</th>
+                        <th>Pacientes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for x in top_comunas %}
+                    <tr>
+                        <td>{{ x.COMUNA_GEOJSON }}</td>
+                        <td>{{ x.alta }}</td>
+                        <td>{{ x.total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>Hospitales que más trasladan</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hospital origen</th>
+                        <th>Traslados</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for x in top_hospitales_trasladan %}
+                    <tr>
+                        <td>{{ x.hospital_origen }}</td>
+                        <td>{{ x.cantidad }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+new Chart(document.getElementById('graficoRegiones'), {
+    type: 'bar',
+    data: {
+        labels: JSON.parse('{{ graf_regiones_labels|escapejs }}'),
+        datasets: [{
+            label: 'Casos graves',
+            data: JSON.parse('{{ graf_regiones_values|escapejs }}')
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } }
+    }
+});
+
+new Chart(document.getElementById('graficoComunas'), {
+    type: 'bar',
+    data: {
+        labels: JSON.parse('{{ graf_comunas_labels|escapejs }}'),
+        datasets: [{
+            label: 'Casos graves',
+            data: JSON.parse('{{ graf_comunas_values|escapejs }}')
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } }
+    }
+});
+
+new Chart(document.getElementById('graficoHospTras'), {
+    type: 'bar',
+    data: {
+        labels: JSON.parse('{{ graf_hosp_tras_labels|escapejs }}'),
+        datasets: [{
+            label: 'Traslados',
+            data: JSON.parse('{{ graf_hosp_tras_values|escapejs }}')
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } }
+    }
+});
+</script>
+</body>
+</html>

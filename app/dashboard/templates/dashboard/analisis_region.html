@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Análisis de región</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f4f8ff; color: #1f2d3d; }
+        .contenedor { max-width: 1300px; margin: 0 auto; padding: 24px; }
+        .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border-bottom: 1px solid #e8eef5; text-align: left; }
+        th { background: #eef4ff; }
+    </style>
+</head>
+<body>
+<div class="contenedor">
+    <a href="/">← Volver al mapa</a>
+    {% if encontrado %}
+        <h1>{{ region.REGION }}</h1>
+
+        <div class="card">
+            <p><b>Población:</b> {{ region.poblacion }}</p>
+            <p><b>Casos graves:</b> {{ region.alta }}</p>
+            <p><b>% graves entre pacientes:</b> {{ region.porcentaje_severidad }}%</p>
+            <p><b>% población afectada:</b> {{ region.porcentaje_poblacion }}%</p>
+            <p><b>Tasa por 100.000:</b> {{ region.tasa_100k }}</p>
+            <p><b>Total traslados originados en la región:</b> {{ total_traslados }}</p>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Top comunas con más casos graves</h3>
+                <table>
+                    <thead><tr><th>Comuna</th><th>Graves</th><th>Pacientes</th></tr></thead>
+                    <tbody>
+                    {% for x in top_comunas %}
+                        <tr><td>{{ x.COMUNA_GEOJSON }}</td><td>{{ x.alta }}</td><td>{{ x.total }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>Top hospitales con más casos graves</h3>
+                <table>
+                    <thead><tr><th>Hospital</th><th>Graves</th><th>Pacientes</th></tr></thead>
+                    <tbody>
+                    {% for x in top_hospitales %}
+                        <tr><td>{{ x.NOMBRE_HOSPITAL }}</td><td>{{ x.alta }}</td><td>{{ x.total }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Hospitales que más trasladan en la región</h3>
+            <canvas id="graficoRegion"></canvas>
+        </div>
+
+        <script>
+            const labels = JSON.parse('{{ top_origenes_labels|escapejs }}');
+            const values = JSON.parse('{{ top_origenes_values|escapejs }}');
+
+            new Chart(document.getElementById('graficoRegion'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{ label: 'Traslados', data: values }]
+                },
+                options: { responsive: true }
+            });
+        </script>
+    {% else %}
+        <h1>Región no encontrada</h1>
+    {% endif %}
+</div>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Análisis de hospital</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f4f8ff; color: #1f2d3d; }
+        .contenedor { max-width: 1300px; margin: 0 auto; padding: 24px; }
+        .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border-bottom: 1px solid #e8eef5; text-align: left; }
+        th { background: #eef4ff; }
+    </style>
+</head>
+<body>
+<div class="contenedor">
+    <a href="/">← Volver al mapa</a>
+    {% if encontrado %}
+        <h1>{{ hospital.NOMBRE_HOSPITAL }}</h1>
+
+        <div class="card">
+            <p><b>Comuna:</b> {{ hospital.COMUNA_GEO }}</p>
+            <p><b>Región:</b> {{ hospital.REGION_GEO }}</p>
+            <p><b>Pacientes:</b> {{ hospital.total }}</p>
+            <p><b>Casos graves:</b> {{ hospital.alta }}</p>
+            <p><b>% graves:</b> {{ hospital.porcentaje }}%</p>
+            <p><b>Total traslados salientes:</b> {{ total_salientes }}</p>
+            <p><b>Total traslados entrantes:</b> {{ total_entrantes }}</p>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Top destinos</h3>
+                <canvas id="graficoDestinos"></canvas>
+            </div>
+            <div class="card">
+                <h3>Top orígenes</h3>
+                <canvas id="graficoOrigenes"></canvas>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Salientes</h3>
+                <table>
+                    <thead><tr><th>Destino</th><th>Cantidad</th><th>Graves</th><th>% graves</th></tr></thead>
+                    <tbody>
+                    {% for x in salientes %}
+                        <tr><td>{{ x.hospital_destino }}</td><td>{{ x.cantidad }}</td><td>{{ x.graves }}</td><td>{{ x.porcentaje_graves }}%</td></tr>
+                    {% empty %}
+                        <tr><td colspan="4">No hay traslados salientes.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>Entrantes</h3>
+                <table>
+                    <thead><tr><th>Origen</th><th>Cantidad</th><th>Graves</th><th>% graves</th></tr></thead>
+                    <tbody>
+                    {% for x in entrantes %}
+                        <tr><td>{{ x.hospital_origen }}</td><td>{{ x.cantidad }}</td><td>{{ x.graves }}</td><td>{{ x.porcentaje_graves }}%</td></tr>
+                    {% empty %}
+                        <tr><td colspan="4">No hay traslados entrantes.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <script>
+            new Chart(document.getElementById('graficoDestinos'), {
+                type: 'bar',
+                data: {
+                    labels: JSON.parse('{{ top_destinos_labels|escapejs }}'),
+                    datasets: [{ label: 'Traslados', data: JSON.parse('{{ top_destinos_values|escapejs }}') }]
+                }
+            });
+
+            new Chart(document.getElementById('graficoOrigenes'), {
+                type: 'bar',
+                data: {
+                    labels: JSON.parse('{{ top_origenes_labels|escapejs }}'),
+                    datasets: [{ label: 'Traslados', data: JSON.parse('{{ top_origenes_values|escapejs }}') }]
+                }
+            });
+        </script>
+    {% else %}
+        <h1>Hospital no encontrado</h1>
+    {% endif %}
+</div>
+</body>
+</html>
