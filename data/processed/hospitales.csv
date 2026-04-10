@@ -1,0 +1,71 @@
+﻿COD_HOSPITAL,NOMBRE_HOSPITAL,REGION_GEO,COMUNA_GEO,LAT_GEO,LON_GEO,total,alta,porcentaje
+101100,Hospital Dr. Juan Noé Crevanni (Arica),Región de Arica Parinacota,Arica,-18.482478,-70.312948,19449,2389,12.28
+102100,Hospital Dr. Ernesto Torres Galdames (Iquique),Región de Tarapacá,Iquique,-20.214354,-70.138931,20054,2920,14.56
+103100,Hospital Dr. Leonardo Guzmán (Antofagasta),Región de Antofagasta,Antofagasta,-23.616852,-70.385924,22746,3360,14.77
+103101,Hospital Dr. Carlos Cisternas (Calama),Región de Antofagasta,Calama,-22.445201,-68.918257,10853,2036,18.76
+104100,Hospital San José del Carmen (Copiapó),Región de Atacama,Copiapó,-27.373352,-70.322127,13271,1652,12.45
+104103,Hospital Provincial del Huasco Monseñor Fernando Ariztía Ruiz (Vallenar),Región de Atacama,Vallenar,-28.574949,-70.782512,6381,1082,16.96
+105100,Hospital San Juan de Dios (La Serena),Región de Coquimbo,La Serena,-29.908191,-71.249732,20869,3452,16.54
+105101,Hospital San Pablo (Coquimbo),Región de Coquimbo,Coquimbo,-29.968488,-71.337017,18388,2283,12.42
+105102,Hospital Dr. Antonio Tirado Lanas (Ovalle),Región de Coquimbo,Ovalle,-30.599614,-71.200031,11440,1949,17.04
+106100,Hospital Carlos Van Buren (Valparaíso),Región de Valparaíso,Valparaíso,-33.050258,-71.611098,20490,5609,27.37
+106102,Hospital Dr. Eduardo Pereira Ramírez (Valparaíso),Región de Valparaíso,Valparaíso,-33.05679,-71.58962,4663,1080,23.16
+106103,Hospital Claudio Vicuña (San Antonio),Región de Valparaíso,San Antonio,-33.588809,-71.608623,9772,1869,19.13
+107100,Hospital Dr. Gustavo Fricke (Viña del Mar),Región de Valparaíso,Viña del Mar,-33.0294,-71.541725,23492,5282,22.48
+107101,Hospital San Martín (Quillota),Región de Valparaíso,Quillota,-32.87993,-71.257745,14011,2747,19.61
+107102,Hospital de Quilpué,Región de Valparaíso,Quilpué,-33.051961,-71.433933,214,36,16.82
+108100,Hospital de San Camilo (San Felipe),Región de Valparaíso,San Felipe,-32.74977,-70.708992,13056,2262,17.33
+108101,Hospital San Juan de Dios (Los Andes),Región de Valparaíso,Los Andes,-32.829664,-70.59643,8615,1637,19.0
+109100,"Complejo Hospitalario San José (Santiago, Independencia)",Región Metropolitana de Santiago,Independencia,-33.416586,-70.653318,19955,3253,16.3
+109101,"Hospital Clínico de Niños Dr. Roberto del Río (Santiago, Independencia)",Región Metropolitana de Santiago,Independencia,-33.415335,-70.655086,6703,2600,38.79
+110100,"Hospital San Juan de Dios (Santiago, Santiago)",Región Metropolitana de Santiago,Santiago,-33.442394,-70.679188,26200,5515,21.05
+110110,Instituto Traumatológico Dr. Teodoro Gebauer,Región Metropolitana de Santiago,Santiago,-33.434891,-70.658236,4373,278,6.36
+110120,"Hospital Dr. Félix Bulnes Cerda (Santiago, Quinta Normal)",Región Metropolitana de Santiago,Cerro Navia,-33.423625,-70.741664,25387,6211,24.47
+110130,Hospital Adalberto Steeger (Talagante),Región Metropolitana de Santiago,Talagante,-33.66801,-70.920339,5882,1199,20.38
+110150,Hospital San José (Melipilla),Región Metropolitana de Santiago,Melipilla,-33.69526,-71.214668,10127,1255,12.39
+111100,"Hospital Clínico San Borja-Arriarán (Santiago, Santiago)",Región Metropolitana de Santiago,Santiago,-33.460498,-70.64232,19974,3081,15.43
+111101,Hospital Clínico Metropolitano El Carmen Doctor Luis Valentín Ferrada,Región Metropolitana de Santiago,Maipú,-33.508212,-70.774248,19977,5903,29.55
+111195,Hospital de Urgencia Asistencia Pública Dr. Alejandro del Río,Región Metropolitana de Santiago,Santiago,-33.444004,-70.637955,11222,4299,38.31
+112100,"Hospital Del Salvador (Santiago, Providencia)",Región Metropolitana de Santiago,Providencia,-33.43664,-70.624493,18433,3226,17.5
+112101,"Hospital Dr. Luis Tisné B. (Santiago, Peñalolén)",Región Metropolitana de Santiago,Peñalolén,-33.501328,-70.579408,17502,3392,19.38
+112102,"Hospital de Niños Dr. Luis Calvo Mackenna (Santiago, Providencia)",Región Metropolitana de Santiago,Providencia,-33.430592,-70.615846,7120,2678,37.61
+112103,Instituto Nacional de Enfermedades Respiratorias y Cirugía Torácica,Región Metropolitana de Santiago,Providencia,-33.437988,-70.621882,3698,1243,33.61
+112104,Instituto de Neurocirugía Dr. Alfonso Asenjo,Región Metropolitana de Santiago,Providencia,-33.436888,-70.622448,3411,820,24.04
+113100,"Hospital Barros Luco Trudeau (Santiago, San Miguel)",Región Metropolitana de Santiago,San Miguel,-33.485147,-70.644439,26589,5102,19.19
+113130,"Hospital Dr. Exequiel González Cortés (Santiago, San Miguel)",Región Metropolitana de Santiago,San Miguel,-33.484761,-70.648129,9832,3573,36.34
+113150,Hospital San Luis (Buin),Región Metropolitana de Santiago,Buin,-33.734263,-70.739547,5513,1129,20.48
+113180,"Hospital El Pino (Santiago, San Bernardo)",Región Metropolitana de Santiago,San Bernardo,-33.58435,-70.676793,15655,3409,21.78
+114101,"Complejo Hospitalario Dr. Sótero del Río (Santiago, Puente Alto)",Región Metropolitana de Santiago,Puente Alto,-33.577251,-70.581781,47796,12067,25.25
+114103,Hospital Padre Alberto Hurtado (San Ramón),Región Metropolitana de Santiago,San Ramón,-33.5525,-70.635024,20658,4757,23.03
+114105,Hospital Clínico Metropolitano La Florida Dra. Eloisa Díaz Inzunza,Región Metropolitana de Santiago,La Florida,-33.514161,-70.599148,19770,4317,21.84
+115107,Hospital San Juan de Dios (San Fernando),Región del Libertador Gral. B. O'Higgins,San Fernando,-34.575908,-70.992563,9599,1317,13.72
+115110,Hospital de Santa Cruz,Región del Libertador Gral. B. O'Higgins,Santa Cruz,-34.634422,-71.35723,6946,844,12.15
+116100,Hospital San Juan de Dios (Curicó),Región del Maule,Curicó,-34.978121,-71.213364,21132,3721,17.61
+116105,Hospital Dr. César Garavagno Burotto (Talca),Región del Maule,Talca,-35.426896,-71.646373,33380,5684,17.03
+116107,Hospital de Constitución,Región del Maule,Constitución,-35.339432,-72.402702,3185,665,20.88
+116108,Hospital Presidente Carlos Ibáñez del Campo (Linares),Región del Maule,Linares,-35.844282,-71.590991,14021,2114,15.08
+116110,Hospital San José (Parral),Región del Maule,Parral,-36.141982,-71.814027,4765,1066,22.37
+116111,Hospital San Juan de Dios (Cauquenes),Región del Maule,Cauquenes,-35.963105,-72.32527,4633,976,21.07
+117101,Hospital Clínico Herminda Martín (Chillán),Región de Ñuble,Chillán,-36.608831,-72.092671,5006,914,18.26
+117102,Hospital de San Carlos,Región de Ñuble,San Carlos,-36.429931,-71.959831,8695,1555,17.88
+118100,Hospital Clínico Regional Dr. Guillermo Grant Benavente (Concepción),Región del Bíobío,Concepción,-36.82511,-73.037951,34198,8613,25.19
+118105,Hospital San José (Coronel),Región del Bíobío,Coronel,-37.028242,-73.135861,7585,1743,22.98
+118106,Hospital de Lota,Región del Bíobío,Lota,-37.09019,-73.155535,6185,985,15.93
+119100,Hospital Las Higueras (Talcahuano),Región del Bíobío,Talcahuano,-36.740101,-73.108694,24752,3517,14.21
+119101,Hospital de Tomé,Región del Bíobío,Tome,-36.613323,-72.954554,3988,1035,25.95
+119102,Hospital Penco - Lirquén,Región del Bíobío,Penco,-36.719574,-72.975452,4106,1035,25.21
+120101,Complejo Asistencial Dr. Víctor Ríos Ruiz (Los Ángeles),Región del Bíobío,Los Ángeles,-37.47365,-72.346903,30088,5461,18.15
+121109,Hospital Dr. Hernán Henríquez Aravena (Temuco),Región de La Araucanía,Temuco,-38.736532,-72.599238,29020,4967,17.12
+121110,Hospital Dr. Abraham Godoy (Lautaro),Región de La Araucanía,Lautaro,-38.537076,-72.418384,4646,720,15.5
+121114,Hospital Intercultural de Nueva Imperial,Región de La Araucanía,Nueva Imperial,-38.740329,-72.958314,5879,1031,17.54
+121117,Hospital de Pitrufquén,Región de La Araucanía,Pitrufquén,-38.989944,-72.643501,3842,891,23.19
+121121,Hospital de Villarrica,Región de La Araucanía,Villarrica,-39.2777,-72.226793,6735,1022,15.17
+122100,Hospital Clínico Regional (Valdivia),Región de Los Ríos,Valdivia,-39.831807,-73.240138,23166,3892,16.8
+123100,Hospital Base San José de Osorno,Región de Los Lagos,Osorno,-40.5883,-73.127785,19917,3615,18.15
+124105,Hospital de Puerto Montt,Región de Los Lagos,Puerto Montt,-41.44855,-72.957342,29932,6168,20.61
+125100,Hospital Regional (Coihaique),Región de Aysén del General Carlos Ibañez del Campo,Coyhaique,-45.568399,-72.073423,855,97,11.35
+126100,Hospital Clínico de Magallanes Dr. Lautaro Navarro Avaria,Región de Magallanes y de la Antártica Chilena,Punta Arenas,-53.12215,-70.896232,13204,2598,19.68
+128109,Hospital Provincial Dr. Rafael Avaría (Curanilahue),Región del Bíobío,Curanilahue,-37.473676,-73.348238,7006,1312,18.73
+129100,Hospital Dr. Mauricio Heyermann (Angol),Región de La Araucanía,Angol,-37.794444,-72.705669,10591,1570,14.82
+129106,Hospital San José (Victoria),Región de La Araucanía,Victoria,-38.233942,-72.340159,8267,1288,15.58
+133150,Hospital de Castro,Región de Los Lagos,Castro,-42.477043,-73.76933,8503,1270,14.94

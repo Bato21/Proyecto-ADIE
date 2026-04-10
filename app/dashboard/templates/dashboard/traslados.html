@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Vista de Traslados</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f4f8ff;
+            color: #1f2d3d;
+        }
+
+        .contenedor {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .titulo {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .subtitulo {
+            color: #516070;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+
+        .filtro {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        select, button, a.boton {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #ccd6e0;
+            font-size: 14px;
+            text-decoration: none;
+            color: inherit;
+            background: white;
+        }
+
+        button, a.boton {
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e8eef5;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #eef4ff;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 1000px) {
+            .grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .small {
+            color: #607080;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="contenedor">
+        <div class="titulo">Vista analítica de traslados</div>
+        <div class="subtitulo">Resumen por hospital de origen y principal destino</div>
+
+        <div class="card">
+            <form method="get" class="filtro">
+                <label for="region"><strong>Filtrar por región:</strong></label>
+                <select name="region" id="region">
+                    <option value="">Todas</option>
+                    {% for r in regiones %}
+                        <option value="{{ r }}" {% if r == region_seleccionada %}selected{% endif %}>
+                            {{ r }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button type="submit">Aplicar</button>
+                <a href="/traslados/" class="boton">Limpiar</a>
+                <a href="/" class="boton">Volver al mapa</a>
+            </form>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Top 10 hospitales que más trasladan</h3>
+                <canvas id="graficoTop10"></canvas>
+            </div>
+
+            <div class="card">
+                <h3>Cómo leer esta vista</h3>
+                <p>La tabla resume cuántos traslados realiza cada hospital de origen, cuál es su destino principal y qué proporción de esos traslados corresponde a casos graves.</p>
+                <p class="small">Esta vista usa el dataset procesado <code>traslados.csv</code>.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Tabla resumen</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hospital origen</th>
+                        <th>Región origen</th>
+                        <th>Total traslados</th>
+                        <th>Total graves</th>
+                        <th>% graves</th>
+                        <th>Principal destino</th>
+                        <th>Traslados a principal destino</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in tabla %}
+                    <tr>
+                        <td>{{ fila.hospital_origen }}</td>
+                        <td>{{ fila.region_origen }}</td>
+                        <td>{{ fila.total_traslados }}</td>
+                        <td>{{ fila.total_graves }}</td>
+                        <td>{{ fila.porcentaje_graves }}%</td>
+                        <td>{{ fila.principal_destino }}</td>
+                        <td>{{ fila.traslados_a_principal_destino }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7">No hay datos para el filtro seleccionado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const labels = JSON.parse('{{ top10_labels|escapejs }}');
+        const values = JSON.parse('{{ top10_values|escapejs }}');
+
+        new Chart(document.getElementById('graficoTop10'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Total traslados',
+                    data: values
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

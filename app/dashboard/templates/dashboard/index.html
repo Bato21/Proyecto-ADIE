@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Proyecto ADIE</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f8ff;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            height: 100vh;
+        }
+
+        .sidebar {
+            background: white;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+
+        #mapa {
+            height: 100%;
+        }
+
+        .titulo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .info {
+            margin-top: 20px;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .leyenda {
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            line-height: 18px;
+        }
+
+        .leyenda i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+        }
+
+        .seccion {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #ddd;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #eef4ff;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        .botones {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .botones button {
+            border: none;
+            background: #1f77ff;
+            color: white;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .botones button:hover {
+            background: #0b5ed7;
+        }
+
+        .botones button.secundario {
+            background: #6c757d;
+        }
+
+        .botones button.secundario:hover {
+            background: #5c636a;
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout">
+    <div class="sidebar">
+        <div class="titulo">Proyecto ADIE</div>
+
+        <div class="info" id="info-region">
+            Haz click en una región
+        </div>
+
+        <div class="seccion">
+            <h3 style="margin:0 0 10px 0;">Hospital seleccionado</h3>
+            <div class="info" id="info-hospital">
+                Haz click en un hospital
+            </div>
+
+            <div class="botones">
+                <button id="btn-salientes">Ver traslados salientes</button>
+                <button id="btn-entrantes">Ver traslados entrantes</button>
+                <button id="btn-limpiar" class="secundario">Ocultar flujos</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mapa"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+<script>
+const regiones = JSON.parse('{{ regiones_json|escapejs }}');
+const geojsonChile = JSON.parse('{{ geojson_chile_json|escapejs }}');
+
+const mapa = L.map('mapa').setView([-35.7, -71.5], 4);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    subdomains: 'abcd'
+}).addTo(mapa);
+
+const infoRegion = document.getElementById("info-region");
+const infoHospital = document.getElementById("info-hospital");
+const btnSalientes = document.getElementById("btn-salientes");
+const btnEntrantes = document.getElementById("btn-entrantes");
+const btnLimpiar = document.getElementById("btn-limpiar");
+
+const datosRegion = {};
+regiones.forEach(r => {
+    datosRegion[String(r.codregion)] = r;
+});
+
+let capaComunas = null;
+let capaHospitales = null;
+let capaFlujos = null;
+let hospitalSeleccionado = null;
+let trasladosGlobal = [];
+
+function color(v) {
+    return v > 1.2 ? '#800026' :
+           v > 1.0 ? '#BD0026' :
+           v > 0.8 ? '#E31A1C' :
+           v > 0.6 ? '#FC4E2A' :
+           v > 0.4 ? '#FD8D3C' :
+           v > 0.2 ? '#FEB24C' :
+                     '#FED976';
+}
+
+function radioHospital(total) {
+    const t = Number(total || 0);
+
+    if (t <= 0) return 4;
+
+    return Math.max(5, Math.min(22, Math.sqrt(t) / 18 + 3));
+}
+
+function grosorFlujo(cantidad) {
+    const c = Number(cantidad || 0);
+    if (c > 100) return 7;
+    if (c > 50) return 5;
+    if (c > 20) return 4;
+    if (c > 10) return 3;
+    return 2;
+}
+
+function estiloRegion(feature) {
+    const d = datosRegion[String(feature.properties.codregion)];
+    const v = d ? Number(d.porcentaje_poblacion) : 0;
+
+    return {
+        fillColor: color(v),
+        weight: 2,
+        color: '#ffffff',
+        fillOpacity: 0.85
+    };
+}
+
+function mostrarRegion(d) {
+    infoRegion.innerHTML = `
+        <b>${d.REGION}</b><br><br>
+        Población: ${Number(d.poblacion).toLocaleString('es-CL')}<br>
+        Casos graves: ${Number(d.alta).toLocaleString('es-CL')}<br>
+        % graves entre pacientes: ${Number(d.porcentaje_severidad).toFixed(2)}%<br>
+        % población afectada: ${Number(d.porcentaje_poblacion).toFixed(3)}%<br>
+        Tasa por 100.000: ${Number(d.tasa_100k).toFixed(2)}
+    `;
+}
+
+function mostrarHospital(h) {
+    const nombre = h.NOMBRE_HOSPITAL || 'Hospital';
+    const comuna = h.COMUNA_GEO || 'Sin comuna';
+    const region = h.REGION_GEO || 'Sin región';
+
+    infoHospital.innerHTML = `
+        <b>${nombre}</b><br><br>
+        Comuna: ${comuna}<br>
+        Región: ${region}<br>
+        Total pacientes: ${Number(h.total || 0).toLocaleString('es-CL')}<br>
+        Casos graves: ${Number(h.alta || 0).toLocaleString('es-CL')}<br>
+        % graves entre pacientes: ${Number(h.porcentaje || 0).toFixed(2)}%<br>
+        <span class="badge">Código: ${h.COD_HOSPITAL || 'N/D'}</span>
+    `;
+}
+
+function limpiarFlujos() {
+    if (capaFlujos) {
+        mapa.removeLayer(capaFlujos);
+        capaFlujos = null;
+    }
+}
+
+function dibujarFlujos(tipo) {
+    if (!hospitalSeleccionado) {
+        alert("Primero selecciona un hospital");
+        return;
+    }
+
+    limpiarFlujos();
+
+    const codigoHospital = String(hospitalSeleccionado.COD_HOSPITAL);
+    const nombreHospital = String(hospitalSeleccionado.NOMBRE_HOSPITAL || "").trim().toUpperCase();
+
+    let flujosFiltrados = [];
+
+    if (tipo === "salientes") {
+        flujosFiltrados = trasladosGlobal.filter(t =>
+            String(t.cod_hospital_origen) === codigoHospital ||
+            String(t.hospital_origen || "").trim().toUpperCase() === nombreHospital
+        );
+    } else if (tipo === "entrantes") {
+        flujosFiltrados = trasladosGlobal.filter(t =>
+            String(t.cod_hospital_destino) === codigoHospital ||
+            String(t.hospital_destino || "").trim().toUpperCase() === nombreHospital
+        );
+    }
+
+    capaFlujos = L.layerGroup();
+
+    flujosFiltrados.forEach(t => {
+        const latOrigen = Number(t.lat_origen);
+        const lonOrigen = Number(t.lon_origen);
+        const latDestino = Number(t.lat_destino);
+        const lonDestino = Number(t.lon_destino);
+
+        if (
+            !isNaN(latOrigen) && !isNaN(lonOrigen) &&
+            !isNaN(latDestino) && !isNaN(lonDestino)
+        ) {
+            const colorFlujo = tipo === "salientes" ? "#1565c0" : "#2e7d32";
+
+            const weight = grosorFlujo(t.cantidad) + 1;
+
+            const midLat = (latOrigen + latDestino) / 2;
+            const midLon = (lonOrigen + lonDestino) / 2;
+
+            const dx = lonDestino - lonOrigen;
+            const dy = latDestino - latOrigen;
+
+            const curvaFactor = 0.18;
+            const controlLat = midLat + dx * curvaFactor;
+            const controlLon = midLon - dy * curvaFactor;
+
+            const puntosCurva = [
+                [latOrigen, lonOrigen],
+                [controlLat, controlLon],
+                [latDestino, lonDestino]
+            ];
+
+            const linea = L.polyline(puntosCurva, {
+                color: colorFlujo,
+                weight: weight,
+                opacity: 0.9,
+                lineCap: "round"
+            });
+
+            const popupHtml = `
+                <b>${t.hospital_origen}</b><br>
+                → <b>${t.hospital_destino}</b><br><br>
+                Cantidad de traslados: ${Number(t.cantidad).toLocaleString('es-CL')}<br>
+                Casos graves: ${Number(t.graves || 0).toLocaleString('es-CL')}<br>
+                % graves: ${Number(t.porcentaje_graves || 0).toFixed(2)}%
+            `;
+
+            linea.bindPopup(popupHtml);
+
+            const marcadorCentro = L.circleMarker([controlLat, controlLon], {
+                radius: Math.max(6, Math.min(14, Math.sqrt(Number(t.cantidad || 0)) * 1.6)),
+                color: "#ffffff",
+                weight: 2,
+                fillColor: colorFlujo,
+                fillOpacity: 1
+            });
+
+            marcadorCentro.bindTooltip(`
+                ${Number(t.cantidad).toLocaleString('es-CL')} traslados
+            `);
+
+            marcadorCentro.bindPopup(popupHtml);
+
+            marcadorCentro.on("click", function() {
+                marcadorCentro.openPopup();
+            });
+
+            linea.addTo(capaFlujos);
+            marcadorCentro.addTo(capaFlujos);
+        }
+    });
+
+    capaFlujos.addTo(mapa);
+}
+
+btnSalientes.addEventListener("click", () => dibujarFlujos("salientes"));
+btnEntrantes.addEventListener("click", () => dibujarFlujos("entrantes"));
+btnLimpiar.addEventListener("click", limpiarFlujos);
+
+function onEachRegion(feature, layer) {
+    const cod = String(feature.properties.codregion);
+    const d = datosRegion[cod];
+
+    layer.on({
+        mouseover: function () {
+            if (d) {
+                layer.bindTooltip(`
+                    <b>${d.REGION}</b><br>
+                    % población: ${Number(d.porcentaje_poblacion).toFixed(3)}%
+                `).openTooltip();
+            }
+        },
+        click: function () {
+            if (d) {
+                mostrarRegion(d);
+            }
+            cargarComunasYHospitales(cod);
+        }
+    });
+}
+
+function cargarComunasYHospitales(cod) {
+    fetch(`/api/comunas/${cod}/`)
+        .then(r => r.json())
+        .then(data => {
+            const comunas = data.comunas || [];
+            const hospitales = data.hospitales || [];
+            const geojsonRegion = data.geojson;
+
+            const datosComuna = {};
+            comunas.forEach(c => {
+                datosComuna[String(c.cod_comuna)] = c;
+            });
+
+            function estiloComuna(feature) {
+                const d = datosComuna[String(feature.properties.cod_comuna)];
+                const v = d ? Number(d.porcentaje_poblacion) : 0;
+
+                return {
+                    fillColor: color(v),
+                    weight: 1,
+                    color: '#333',
+                    fillOpacity: 0.9
+                };
+            }
+
+            function onEachComuna(feature, layer) {
+                const d = datosComuna[String(feature.properties.cod_comuna)];
+
+                if (d) {
+                    layer.bindTooltip(`
+                        <b>${d.COMUNA_GEOJSON}</b><br>
+                        Pacientes: ${Number(d.total).toLocaleString('es-CL')}<br>
+                        Graves: ${Number(d.alta).toLocaleString('es-CL')}<br>
+                        % población: ${Number(d.porcentaje_poblacion).toFixed(3)}%
+                    `);
+
+                    layer.on({
+                        mouseover: e => e.target.openTooltip(),
+                        click: () => {
+                            layer.bindPopup(`
+                                <b>${d.COMUNA_GEOJSON}</b><br>
+                                Población: ${Number(d.poblacion).toLocaleString('es-CL')}<br>
+                                Pacientes totales: ${Number(d.total).toLocaleString('es-CL')}<br>
+                                Casos graves: ${Number(d.alta).toLocaleString('es-CL')}<br>
+                                % graves entre pacientes: ${Number(d.porcentaje_severidad).toFixed(2)}%<br>
+                                % población: ${Number(d.porcentaje_poblacion).toFixed(3)}%<br>
+                                Tasa: ${Number(d.tasa_100k).toFixed(2)}
+                            `).openPopup();
+                        }
+                    });
+                } else {
+                    layer.bindTooltip(`<b>${feature.properties.Comuna}</b><br>Sin datos`);
+                }
+            }
+
+            if (capaComunas) {
+                mapa.removeLayer(capaComunas);
+            }
+
+            capaComunas = L.geoJSON(geojsonRegion, {
+                style: estiloComuna,
+                onEachFeature: onEachComuna
+            }).addTo(mapa);
+
+            if (capaHospitales) {
+                mapa.removeLayer(capaHospitales);
+            }
+
+            limpiarFlujos();
+            hospitalSeleccionado = null;
+
+            capaHospitales = L.layerGroup();
+
+            hospitales.forEach(h => {
+                const lat = Number(h.LAT_GEO);
+                const lon = Number(h.LON_GEO);
+
+                if (!isNaN(lat) && !isNaN(lon)) {
+                    const punto = turf.point([lon, lat]);
+
+                    const dentroDeRegion = geojsonRegion.features.some(feature =>
+                        turf.booleanPointInPolygon(punto, feature)
+                    );
+
+                    if (dentroDeRegion) {
+                        const marker = L.circleMarker([lat, lon], {
+                            radius: radioHospital(h.total),
+                            color: '#0b3d91',
+                            fillColor: '#1f77ff',
+                            fillOpacity: 0.85,
+                            weight: 1.5
+                        });
+
+                        const nombre = h.NOMBRE_HOSPITAL || 'Hospital';
+
+                        marker.bindTooltip(`
+                            <b>${nombre}</b><br>
+                            Total pacientes: ${Number(h.total || 0).toLocaleString('es-CL')}<br>
+                            Casos graves: ${Number(h.alta || 0).toLocaleString('es-CL')}
+                        `);
+
+                        marker.on('click', function() {
+                            hospitalSeleccionado = h;
+                            mostrarHospital(h);
+
+                            marker.bindPopup(`
+                                <b>${nombre}</b><br>
+                                Comuna: ${h.COMUNA_GEO || 'Sin dato'}<br>
+                                Región: ${h.REGION_GEO || 'Sin dato'}<br>
+                                Total pacientes: ${Number(h.total || 0).toLocaleString('es-CL')}<br>
+                                Casos graves: ${Number(h.alta || 0).toLocaleString('es-CL')}<br>
+                                % graves entre pacientes: ${Number(h.porcentaje || 0).toFixed(2)}%
+                            `).openPopup();
+                        });
+
+                        marker.addTo(capaHospitales);
+                    }
+                }
+            });
+
+            capaHospitales.addTo(mapa);
+            mapa.fitBounds(capaComunas.getBounds());
+        });
+}
+
+function cargarTraslados() {
+    fetch('/api/traslados/')
+        .then(r => r.json())
+        .then(data => {
+            trasladosGlobal = data.traslados || [];
+            console.log("Traslados cargados:", trasladosGlobal.length);
+        });
+}
+
+const capaRegiones = L.geoJSON(geojsonChile, {
+    style: estiloRegion,
+    onEachFeature: onEachRegion
+}).addTo(mapa);
+
+mapa.fitBounds(capaRegiones.getBounds());
+
+const leyenda = L.control({position: 'bottomright'});
+
+leyenda.onAdd = function() {
+    const div = L.DomUtil.create('div', 'leyenda');
+    const rangos = [0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2];
+
+    div.innerHTML += "<b>% población casos graves</b><br>";
+
+    for (let i = 0; i < rangos.length; i++) {
+        const desde = rangos[i];
+        const hasta = rangos[i + 1];
+
+        div.innerHTML +=
+            `<i style="background:${color(desde + 0.01)}"></i>
+             ${desde}${hasta ? '-' + hasta : '+'}<br>`;
+    }
+
+    div.innerHTML += `<hr style="margin:8px 0;">`;
+    div.innerHTML += `<div><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#1f77ff;border:1px solid #0b3d91;margin-right:6px;"></span>Hospitales</div>`;
+    div.innerHTML += `<div style="margin-top:4px;"><span style="display:inline-block;width:18px;height:3px;background:#1565c0;margin-right:6px;"></span>Salientes</div>`;
+    div.innerHTML += `<div style="margin-top:4px;"><span style="display:inline-block;width:18px;height:3px;background:#2e7d32;margin-right:6px;"></span>Entrantes</div>`;
+    return div;
+};
+
+leyenda.addTo(mapa);
+cargarTraslados();
+</script>
+
+</body>
+</html>
