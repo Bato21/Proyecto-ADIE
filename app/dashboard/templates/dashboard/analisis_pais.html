@@ -86,6 +86,12 @@
             font-weight: bold;
         }
 
+        .small {
+            color: #607080;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
         @media (max-width: 1100px) {
             .grid-kpi,
             .grid-2 {
@@ -99,7 +105,7 @@
     <a href="/" class="boton">← Volver al mapa</a>
 
     <div class="titulo">Análisis global país</div>
-    <div class="subtitulo">Resumen nacional para orientar la exploración de regiones, comunas, hospitales y traslados</div>
+    <div class="subtitulo">Resumen nacional de regiones, comunas, hospitales y motivos de traslado</div>
 
     <div class="grid-kpi">
         <div class="card">
@@ -120,6 +126,31 @@
         </div>
     </div>
 
+    <div class="grid-kpi">
+        <div class="card">
+            <div class="kpi-titulo">Severidad 0</div>
+            <div class="kpi-valor">{{ severidad_0 }}</div>
+            <div class="small">{{ porcentaje_sev_0 }}% de los traslados</div>
+        </div>
+        <div class="card">
+            <div class="kpi-titulo">Severidad 1</div>
+            <div class="kpi-valor">{{ severidad_1 }}</div>
+            <div class="small">{{ porcentaje_sev_1 }}% de los traslados</div>
+        </div>
+        <div class="card">
+            <div class="kpi-titulo">Severidad 2</div>
+            <div class="kpi-valor">{{ severidad_2 }}</div>
+            <div class="small">{{ porcentaje_sev_2 }}% de los traslados</div>
+        </div>
+        <div class="card">
+            <div class="kpi-titulo">Severidad 3</div>
+            <div class="kpi-valor">{{ severidad_3 }}</div>
+            <div class="small">{{ porcentaje_sev_3 }}% de los traslados</div>
+        </div>
+    </div>
+
+    <div class="small">Las severidades corresponden al total de traslados registrados en el dataset de motivos de traslado, no a pacientes únicos.</div>
+
     <div class="grid-2">
         <div class="card">
             <h3>Top regiones con más casos graves</h3>
@@ -137,18 +168,19 @@
             <canvas id="graficoHospTras"></canvas>
         </div>
         <div class="card">
-            <h3>Top destinos de traslados</h3>
+            <h3>Top diagnósticos de traslado</h3>
+            <p class="small">Diagnóstico = problema de salud principal registrado en el caso trasladado.</p>
             <table>
                 <thead>
                     <tr>
-                        <th>Hospital destino</th>
-                        <th>Traslados</th>
+                        <th>Diagnóstico</th>
+                        <th>Cantidad</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for x in top_destinos %}
+                    {% for x in top_diagnosticos %}
                     <tr>
-                        <td>{{ x.hospital_destino }}</td>
+                        <td>{{ x.diagnostico }}</td>
                         <td>{{ x.cantidad }}</td>
                     </tr>
                     {% endfor %}
@@ -193,7 +225,7 @@
                 <tbody>
                     {% for x in top_hospitales_graves %}
                     <tr>
-                        <td>{{ x.NOMBRE_HOSPITAL }}</td>
+                        <td><a href="/analisis/hospital/{{ x.COD_HOSPITAL }}/">{{ x.NOMBRE_HOSPITAL }}</a></td>
                         <td>{{ x.alta }}</td>
                         <td>{{ x.total }}</td>
                     </tr>
@@ -227,18 +259,18 @@
         </div>
 
         <div class="card">
-            <h3>Hospitales que más trasladan</h3>
+            <h3>Top hospitales que más trasladan</h3>
             <table>
                 <thead>
                     <tr>
-                        <th>Hospital origen</th>
+                        <th>Hospital</th>
                         <th>Traslados</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for x in top_hospitales_trasladan %}
                     <tr>
-                        <td>{{ x.hospital_origen }}</td>
+                        <td><a href="/analisis/hospital/{{ x.cod_hospital }}/">{{ x.hospital }}</a></td>
                         <td>{{ x.cantidad }}</td>
                     </tr>
                     {% endfor %}

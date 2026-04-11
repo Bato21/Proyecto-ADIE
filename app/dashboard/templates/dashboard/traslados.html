@@ -96,7 +96,7 @@
 <body>
     <div class="contenedor">
         <div class="titulo">Vista analítica de traslados</div>
-        <div class="subtitulo">Resumen por hospital de origen y principal destino</div>
+        <div class="subtitulo">Resumen general de hospitales que más trasladan</div>
 
         <div class="card">
             <form method="get" class="filtro">
@@ -123,7 +123,7 @@
 
             <div class="card">
                 <h3>Cómo leer esta vista</h3>
-                <p>La tabla resume cuántos traslados realiza cada hospital de origen, cuál es su destino principal y qué proporción de esos traslados corresponde a casos graves.</p>
+                <p>La tabla resume cuántos traslados realiza cada hospital y qué proporción de esos traslados corresponde a casos graves.</p>
                 <p class="small">Esta vista usa el dataset procesado <code>traslados.csv</code>.</p>
             </div>
         </div>
@@ -133,13 +133,11 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Hospital origen</th>
-                        <th>Región origen</th>
+                        <th>Hospital</th>
+                        <th>Región</th>
                         <th>Total traslados</th>
                         <th>Total graves</th>
                         <th>% graves</th>
-                        <th>Principal destino</th>
-                        <th>Traslados a principal destino</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -150,12 +148,10 @@
                         <td>{{ fila.total_traslados }}</td>
                         <td>{{ fila.total_graves }}</td>
                         <td>{{ fila.porcentaje_graves }}%</td>
-                        <td>{{ fila.principal_destino }}</td>
-                        <td>{{ fila.traslados_a_principal_destino }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7">No hay datos para el filtro seleccionado.</td>
+                        <td colspan="5">No hay datos para el filtro seleccionado.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

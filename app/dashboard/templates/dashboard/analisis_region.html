@@ -12,6 +12,7 @@
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 10px; border-bottom: 1px solid #e8eef5; text-align: left; }
         th { background: #eef4ff; }
+        .small { color: #607080; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -26,7 +27,12 @@
             <p><b>% graves entre pacientes:</b> {{ region.porcentaje_severidad }}%</p>
             <p><b>% población afectada:</b> {{ region.porcentaje_poblacion }}%</p>
             <p><b>Tasa por 100.000:</b> {{ region.tasa_100k }}</p>
-            <p><b>Total traslados originados en la región:</b> {{ total_traslados }}</p>
+            <p><b>Total traslados registrados:</b> {{ total_traslados }}</p>
+            <p class="small">Las severidades corresponden al total de traslados registrados en esta región, no a pacientes únicos.</p>
+            <p><b>Severidad 0:</b> {{ severidad_0 }} ({{ porcentaje_sev_0 }}%)</p>
+            <p><b>Severidad 1:</b> {{ severidad_1 }} ({{ porcentaje_sev_1 }}%)</p>
+            <p><b>Severidad 2:</b> {{ severidad_2 }} ({{ porcentaje_sev_2 }}%)</p>
+            <p><b>Severidad 3:</b> {{ severidad_3 }} ({{ porcentaje_sev_3 }}%)</p>
         </div>
 
         <div class="grid">
@@ -55,14 +61,31 @@
             </div>
         </div>
 
-        <div class="card">
-            <h3>Hospitales que más trasladan en la región</h3>
-            <canvas id="graficoRegion"></canvas>
+        <div class="grid">
+            <div class="card">
+                <h3>Hospitales que más trasladan en la región</h3>
+                <canvas id="graficoRegion"></canvas>
+            </div>
+
+            <div class="card">
+                <h3>Top diagnósticos de traslado</h3>
+                <p class="small">Diagnóstico = problema de salud principal registrado en el caso trasladado.</p>
+                <table>
+                    <thead><tr><th>Diagnóstico</th><th>Cantidad</th></tr></thead>
+                    <tbody>
+                    {% for x in top_diagnosticos %}
+                        <tr><td>{{ x.diagnostico }}</td><td>{{ x.cantidad }}</td></tr>
+                    {% empty %}
+                        <tr><td colspan="2">No hay datos.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <script>
-            const labels = JSON.parse('{{ top_origenes_labels|escapejs }}');
-            const values = JSON.parse('{{ top_origenes_values|escapejs }}');
+            const labels = JSON.parse('{{ graf_region_labels|escapejs }}');
+            const values = JSON.parse('{{ graf_region_values|escapejs }}');
 
             new Chart(document.getElementById('graficoRegion'), {
                 type: 'bar',

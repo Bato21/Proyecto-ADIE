@@ -1,4 +1,5 @@
 import json
+import pandas as pd
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.conf import settings
@@ -7,6 +8,7 @@ from .services.loaders import (
     cargar_severidad_comuna,
     cargar_hospitales,
     cargar_traslados,
+    cargar_motivo_traslado,
 )
 
 def home(request):
@@ -85,29 +87,6 @@ def vista_traslados(request):
     else:
         resumen["porcentaje_graves"] = []
 
-    idx = (
-        df_filtrado
-        .sort_values(["hospital_origen", "cantidad"], ascending=[True, False])
-        .groupby("hospital_origen")["cantidad"]
-        .idxmax()
-    ) if not df_filtrado.empty else []
-
-    principales_destinos = df_filtrado.loc[idx, [
-        "hospital_origen",
-        "hospital_destino",
-        "cantidad"
-    ]].rename(columns={
-        "hospital_destino": "principal_destino",
-        "cantidad": "traslados_a_principal_destino"
-    }) if len(idx) > 0 else df_filtrado.head(0)
-
-    if not resumen.empty and not principales_destinos.empty:
-        resumen = resumen.merge(
-            principales_destinos,
-            on="hospital_origen",
-            how="left"
-        )
-
     resumen = resumen.sort_values("total_traslados", ascending=False).reset_index(drop=True)
     top10 = resumen.head(10)
 
@@ -125,7 +104,7 @@ def analisis_region(request, codregion):
     df_region = cargar_severidad_region()
     df_comuna = cargar_severidad_comuna()
     df_hospitales = cargar_hospitales()
-    df_traslados = cargar_traslados()
+    df_motivo = cargar_motivo_traslado()
 
     fila = df_region[df_region["codregion"] == int(codregion)].copy()
     if fila.empty:
@@ -134,10 +113,8 @@ def analisis_region(request, codregion):
     r = fila.iloc[0].to_dict()
     nombre_region = str(r["REGION"]).strip().upper()
 
-
     comunas_region = df_comuna[df_comuna["codregion"] == int(codregion)].copy()
     top_comunas = comunas_region.sort_values("alta", ascending=False).head(10)
-
 
     df_hospitales["REGION_GEO_UP"] = df_hospitales["REGION_GEO"].astype(str).str.upper()
 
@@ -171,35 +148,39 @@ def analisis_region(request, codregion):
 
     top_hospitales = hospitales_region.sort_values("alta", ascending=False).head(10)
 
-
-    nombres_hospitales_region = (
-        hospitales_region["NOMBRE_HOSPITAL"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-        .unique()
-        .tolist()
-    )
-
-    df_traslados["hospital_origen_up"] = (
-        df_traslados["hospital_origen"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-    )
-
-    tras_region = df_traslados[
-        df_traslados["hospital_origen_up"].isin(nombres_hospitales_region)
+    df_motivo["region_up"] = df_motivo["region"].fillna("").astype(str).str.upper()
+    motivo_region = df_motivo[
+        df_motivo["region_up"].apply(lambda x: any(clave in x for clave in claves) if x else False)
     ].copy()
 
-    total_traslados = int(tras_region["cantidad"].sum()) if not tras_region.empty else 0
+    motivo_region["severidad"] = pd.to_numeric(motivo_region["severidad"], errors="coerce")
 
-    top_origenes = (
-        tras_region.groupby("hospital_origen", as_index=False)["cantidad"]
-        .sum()
+    total_traslados = int(len(motivo_region))
+    severidad_0 = int((motivo_region["severidad"] == 0).sum())
+    severidad_1 = int((motivo_region["severidad"] == 1).sum())
+    severidad_2 = int((motivo_region["severidad"] == 2).sum())
+    severidad_3 = int((motivo_region["severidad"] == 3).sum())
+
+    porcentaje_sev_0 = round(severidad_0 / total_traslados * 100, 2) if total_traslados else 0
+    porcentaje_sev_1 = round(severidad_1 / total_traslados * 100, 2) if total_traslados else 0
+    porcentaje_sev_2 = round(severidad_2 / total_traslados * 100, 2) if total_traslados else 0
+    porcentaje_sev_3 = round(severidad_3 / total_traslados * 100, 2) if total_traslados else 0
+
+    top_hospitales_trasladan = (
+        motivo_region.groupby("hospital", as_index=False)
+        .size()
+        .rename(columns={"size": "cantidad"})
         .sort_values("cantidad", ascending=False)
         .head(10)
-    ) if not tras_region.empty else tras_region.head(0)
+    ) if not motivo_region.empty else pd.DataFrame(columns=["hospital", "cantidad"])
+
+    top_diagnosticos = (
+        motivo_region.groupby("diagnostico", as_index=False)
+        .size()
+        .rename(columns={"size": "cantidad"})
+        .sort_values("cantidad", ascending=False)
+        .head(10)
+    ) if not motivo_region.empty else pd.DataFrame(columns=["diagnostico", "cantidad"])
 
     context = {
         "encontrado": True,
@@ -207,8 +188,18 @@ def analisis_region(request, codregion):
         "top_comunas": top_comunas.to_dict(orient="records"),
         "top_hospitales": top_hospitales.to_dict(orient="records"),
         "total_traslados": total_traslados,
-        "top_origenes_labels": json.dumps(top_origenes["hospital_origen"].tolist(), ensure_ascii=False) if not top_origenes.empty else "[]",
-        "top_origenes_values": json.dumps(top_origenes["cantidad"].tolist(), ensure_ascii=False) if not top_origenes.empty else "[]",
+        "severidad_0": severidad_0,
+        "severidad_1": severidad_1,
+        "severidad_2": severidad_2,
+        "severidad_3": severidad_3,
+        "porcentaje_sev_0": porcentaje_sev_0,
+        "porcentaje_sev_1": porcentaje_sev_1,
+        "porcentaje_sev_2": porcentaje_sev_2,
+        "porcentaje_sev_3": porcentaje_sev_3,
+        "top_hospitales_trasladan": top_hospitales_trasladan.to_dict(orient="records"),
+        "top_diagnosticos": top_diagnosticos.to_dict(orient="records"),
+        "graf_region_labels": json.dumps(top_hospitales_trasladan["hospital"].tolist(), ensure_ascii=False) if not top_hospitales_trasladan.empty else "[]",
+        "graf_region_values": json.dumps(top_hospitales_trasladan["cantidad"].tolist(), ensure_ascii=False) if not top_hospitales_trasladan.empty else "[]",
     }
     return render(request, "dashboard/analisis_region.html", context)
 
@@ -237,7 +228,7 @@ def analisis_comuna(request, cod_comuna):
 
 def analisis_hospital(request, cod_hospital):
     df_hospitales = cargar_hospitales()
-    df_traslados = cargar_traslados()
+    df_motivo = cargar_motivo_traslado()
 
     fila = df_hospitales[df_hospitales["COD_HOSPITAL"] == int(cod_hospital)].copy()
     if fila.empty:
@@ -245,104 +236,123 @@ def analisis_hospital(request, cod_hospital):
 
     h = fila.iloc[0].to_dict()
 
-    salientes = df_traslados[df_traslados["cod_hospital_origen"] == int(cod_hospital)].copy()
-    entrantes = df_traslados[df_traslados["cod_hospital_destino"] == int(cod_hospital)].copy()
+    df_motivo["cod_hospital"] = pd.to_numeric(df_motivo["cod_hospital"], errors="coerce")
+    motivo_hospital = df_motivo[df_motivo["cod_hospital"] == int(cod_hospital)].copy()
+    motivo_hospital["severidad"] = pd.to_numeric(motivo_hospital["severidad"], errors="coerce")
 
-    total_salientes = int(salientes["cantidad"].sum()) if not salientes.empty else 0
-    total_entrantes = int(entrantes["cantidad"].sum()) if not entrantes.empty else 0
+    total_traslados = int(len(motivo_hospital))
+    severidad_0 = int((motivo_hospital["severidad"] == 0).sum())
+    severidad_1 = int((motivo_hospital["severidad"] == 1).sum())
+    severidad_2 = int((motivo_hospital["severidad"] == 2).sum())
+    severidad_3 = int((motivo_hospital["severidad"] == 3).sum())
 
-    top_destinos = (
-        salientes.groupby("hospital_destino", as_index=False)["cantidad"]
-        .sum()
+    porcentaje_sev_0 = round(severidad_0 / total_traslados * 100, 2) if total_traslados else 0
+    porcentaje_sev_1 = round(severidad_1 / total_traslados * 100, 2) if total_traslados else 0
+    porcentaje_sev_2 = round(severidad_2 / total_traslados * 100, 2) if total_traslados else 0
+    porcentaje_sev_3 = round(severidad_3 / total_traslados * 100, 2) if total_traslados else 0
+
+    top_diagnosticos = (
+        motivo_hospital.groupby("diagnostico", as_index=False)
+        .size()
+        .rename(columns={"size": "cantidad"})
         .sort_values("cantidad", ascending=False)
         .head(10)
-    ) if not salientes.empty else salientes.head(0)
+    ) if not motivo_hospital.empty else pd.DataFrame(columns=["diagnostico", "cantidad"])
 
-    top_origenes = (
-        entrantes.groupby("hospital_origen", as_index=False)["cantidad"]
-        .sum()
+    top_procedimientos = (
+        motivo_hospital.groupby("procedimiento", as_index=False)
+        .size()
+        .rename(columns={"size": "cantidad"})
         .sort_values("cantidad", ascending=False)
         .head(10)
-    ) if not entrantes.empty else entrantes.head(0)
+    ) if not motivo_hospital.empty else pd.DataFrame(columns=["procedimiento", "cantidad"])
 
     context = {
         "encontrado": True,
         "hospital": h,
-        "total_salientes": total_salientes,
-        "total_entrantes": total_entrantes,
-        "salientes": salientes.sort_values("cantidad", ascending=False).head(20).to_dict(orient="records"),
-        "entrantes": entrantes.sort_values("cantidad", ascending=False).head(20).to_dict(orient="records"),
-        "top_destinos_labels": json.dumps(top_destinos["hospital_destino"].tolist(), ensure_ascii=False) if not top_destinos.empty else "[]",
-        "top_destinos_values": json.dumps(top_destinos["cantidad"].tolist(), ensure_ascii=False) if not top_destinos.empty else "[]",
-        "top_origenes_labels": json.dumps(top_origenes["hospital_origen"].tolist(), ensure_ascii=False) if not top_origenes.empty else "[]",
-        "top_origenes_values": json.dumps(top_origenes["cantidad"].tolist(), ensure_ascii=False) if not top_origenes.empty else "[]",
+        "total_traslados": total_traslados,
+        "severidad_0": severidad_0,
+        "severidad_1": severidad_1,
+        "severidad_2": severidad_2,
+        "severidad_3": severidad_3,
+        "porcentaje_sev_0": porcentaje_sev_0,
+        "porcentaje_sev_1": porcentaje_sev_1,
+        "porcentaje_sev_2": porcentaje_sev_2,
+        "porcentaje_sev_3": porcentaje_sev_3,
+        "top_diagnosticos": top_diagnosticos.to_dict(orient="records"),
+        "top_procedimientos": top_procedimientos.to_dict(orient="records"),
     }
     return render(request, "dashboard/analisis_hospital.html", context)
+
 
 def analisis_pais(request):
     df_region = cargar_severidad_region()
     df_comuna = cargar_severidad_comuna()
     df_hospitales = cargar_hospitales()
-    df_traslados = cargar_traslados()
+    df_motivo = cargar_motivo_traslado()
+
+    df_motivo["severidad"] = pd.to_numeric(df_motivo["severidad"], errors="coerce")
 
     total_poblacion = int(df_region["poblacion"].sum()) if "poblacion" in df_region.columns else 0
     total_graves = int(df_region["alta"].sum()) if "alta" in df_region.columns else 0
     total_pacientes = int(df_region["total"].sum()) if "total" in df_region.columns else 0
-    total_traslados = int(df_traslados["cantidad"].sum()) if "cantidad" in df_traslados.columns else 0
+    total_traslados = int(len(df_motivo))
 
-    top_regiones = (
-        df_region.sort_values("alta", ascending=False)
-        .head(10)
-        .copy()
-    )
-
-    top_comunas = (
-        df_comuna.sort_values("alta", ascending=False)
-        .head(10)
-        .copy()
-    )
-
-    top_hospitales_graves = (
-        df_hospitales.sort_values("alta", ascending=False)
-        .head(10)
-        .copy()
-    )
+    top_regiones = df_region.sort_values("alta", ascending=False).head(10).copy()
+    top_comunas = df_comuna.sort_values("alta", ascending=False).head(10).copy()
+    top_hospitales_graves = df_hospitales.sort_values("alta", ascending=False).head(10).copy()
 
     top_hospitales_trasladan = (
-        df_traslados.groupby("hospital_origen", as_index=False)["cantidad"]
-        .sum()
+    df_motivo.groupby(["cod_hospital", "hospital"], as_index=False)
+    .size()
+    .rename(columns={"size": "cantidad"})
+    .sort_values("cantidad", ascending=False)
+    .head(10)
+    .copy()
+)
+
+    top_diagnosticos = (
+        df_motivo.groupby("diagnostico", as_index=False)
+        .size()
+        .rename(columns={"size": "cantidad"})
         .sort_values("cantidad", ascending=False)
         .head(10)
         .copy()
     )
 
-    top_destinos = (
-        df_traslados.groupby("hospital_destino", as_index=False)["cantidad"]
-        .sum()
-        .sort_values("cantidad", ascending=False)
-        .head(10)
-        .copy()
-    )
+    severidad_0 = int((df_motivo["severidad"] == 0).sum())
+    severidad_1 = int((df_motivo["severidad"] == 1).sum())
+    severidad_2 = int((df_motivo["severidad"] == 2).sum())
+    severidad_3 = int((df_motivo["severidad"] == 3).sum())
+
+    porcentaje_sev_0 = round(severidad_0 / total_traslados * 100, 2) if total_traslados else 0
+    porcentaje_sev_1 = round(severidad_1 / total_traslados * 100, 2) if total_traslados else 0
+    porcentaje_sev_2 = round(severidad_2 / total_traslados * 100, 2) if total_traslados else 0
+    porcentaje_sev_3 = round(severidad_3 / total_traslados * 100, 2) if total_traslados else 0
 
     context = {
         "total_poblacion": total_poblacion,
         "total_graves": total_graves,
         "total_pacientes": total_pacientes,
         "total_traslados": total_traslados,
-
+        "severidad_0": severidad_0,
+        "severidad_1": severidad_1,
+        "severidad_2": severidad_2,
+        "severidad_3": severidad_3,
+        "porcentaje_sev_0": porcentaje_sev_0,
+        "porcentaje_sev_1": porcentaje_sev_1,
+        "porcentaje_sev_2": porcentaje_sev_2,
+        "porcentaje_sev_3": porcentaje_sev_3,
         "top_regiones": top_regiones.to_dict(orient="records"),
         "top_comunas": top_comunas.to_dict(orient="records"),
         "top_hospitales_graves": top_hospitales_graves.to_dict(orient="records"),
         "top_hospitales_trasladan": top_hospitales_trasladan.to_dict(orient="records"),
-        "top_destinos": top_destinos.to_dict(orient="records"),
-
+        "top_diagnosticos": top_diagnosticos.to_dict(orient="records"),
         "graf_regiones_labels": json.dumps(top_regiones["REGION"].tolist(), ensure_ascii=False),
         "graf_regiones_values": json.dumps(top_regiones["alta"].tolist(), ensure_ascii=False),
-
         "graf_comunas_labels": json.dumps(top_comunas["COMUNA_GEOJSON"].tolist(), ensure_ascii=False),
         "graf_comunas_values": json.dumps(top_comunas["alta"].tolist(), ensure_ascii=False),
-
-        "graf_hosp_tras_labels": json.dumps(top_hospitales_trasladan["hospital_origen"].tolist(), ensure_ascii=False),
+        "graf_hosp_tras_labels": json.dumps(top_hospitales_trasladan["hospital"].tolist(), ensure_ascii=False),
         "graf_hosp_tras_values": json.dumps(top_hospitales_trasladan["cantidad"].tolist(), ensure_ascii=False),
     }
 

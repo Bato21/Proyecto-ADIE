@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Análisis de hospital</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; background: #f4f8ff; color: #1f2d3d; }
         .contenedor { max-width: 1300px; margin: 0 auto; padding: 24px; }
@@ -12,6 +11,7 @@
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 10px; border-bottom: 1px solid #e8eef5; text-align: left; }
         th { background: #eef4ff; }
+        .small { color: #607080; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -26,68 +26,45 @@
             <p><b>Pacientes:</b> {{ hospital.total }}</p>
             <p><b>Casos graves:</b> {{ hospital.alta }}</p>
             <p><b>% graves:</b> {{ hospital.porcentaje }}%</p>
-            <p><b>Total traslados salientes:</b> {{ total_salientes }}</p>
-            <p><b>Total traslados entrantes:</b> {{ total_entrantes }}</p>
+            <p><b>Total traslados registrados:</b> {{ total_traslados }}</p>
+            <p class="small">Las severidades corresponden al total de traslados registrados en este hospital, no a pacientes únicos.</p>
+            <p><b>Severidad 0:</b> {{ severidad_0 }} ({{ porcentaje_sev_0 }}%)</p>
+            <p><b>Severidad 1:</b> {{ severidad_1 }} ({{ porcentaje_sev_1 }}%)</p>
+            <p><b>Severidad 2:</b> {{ severidad_2 }} ({{ porcentaje_sev_2 }}%)</p>
+            <p><b>Severidad 3:</b> {{ severidad_3 }} ({{ porcentaje_sev_3 }}%)</p>
         </div>
 
         <div class="grid">
             <div class="card">
-                <h3>Top destinos</h3>
-                <canvas id="graficoDestinos"></canvas>
-            </div>
-            <div class="card">
-                <h3>Top orígenes</h3>
-                <canvas id="graficoOrigenes"></canvas>
-            </div>
-        </div>
-
-        <div class="grid">
-            <div class="card">
-                <h3>Salientes</h3>
+                <h3>Top diagnósticos de traslado</h3>
+                <p class="small">Diagnóstico = problema de salud principal registrado en el caso trasladado.</p>
                 <table>
-                    <thead><tr><th>Destino</th><th>Cantidad</th><th>Graves</th><th>% graves</th></tr></thead>
+                    <thead><tr><th>Diagnóstico</th><th>Cantidad</th></tr></thead>
                     <tbody>
-                    {% for x in salientes %}
-                        <tr><td>{{ x.hospital_destino }}</td><td>{{ x.cantidad }}</td><td>{{ x.graves }}</td><td>{{ x.porcentaje_graves }}%</td></tr>
+                    {% for x in top_diagnosticos %}
+                        <tr><td>{{ x.diagnostico }}</td><td>{{ x.cantidad }}</td></tr>
                     {% empty %}
-                        <tr><td colspan="4">No hay traslados salientes.</td></tr>
+                        <tr><td colspan="2">No hay diagnósticos registrados.</td></tr>
                     {% endfor %}
                     </tbody>
                 </table>
             </div>
 
             <div class="card">
-                <h3>Entrantes</h3>
+                <h3>Top procedimientos de traslado</h3>
+                <p class="small">Procedimiento = acción médica o quirúrgica registrada en el caso trasladado.</p>
                 <table>
-                    <thead><tr><th>Origen</th><th>Cantidad</th><th>Graves</th><th>% graves</th></tr></thead>
+                    <thead><tr><th>Procedimiento</th><th>Cantidad</th></tr></thead>
                     <tbody>
-                    {% for x in entrantes %}
-                        <tr><td>{{ x.hospital_origen }}</td><td>{{ x.cantidad }}</td><td>{{ x.graves }}</td><td>{{ x.porcentaje_graves }}%</td></tr>
+                    {% for x in top_procedimientos %}
+                        <tr><td>{{ x.procedimiento }}</td><td>{{ x.cantidad }}</td></tr>
                     {% empty %}
-                        <tr><td colspan="4">No hay traslados entrantes.</td></tr>
+                        <tr><td colspan="2">No hay procedimientos registrados.</td></tr>
                     {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
-
-        <script>
-            new Chart(document.getElementById('graficoDestinos'), {
-                type: 'bar',
-                data: {
-                    labels: JSON.parse('{{ top_destinos_labels|escapejs }}'),
-                    datasets: [{ label: 'Traslados', data: JSON.parse('{{ top_destinos_values|escapejs }}') }]
-                }
-            });
-
-            new Chart(document.getElementById('graficoOrigenes'), {
-                type: 'bar',
-                data: {
-                    labels: JSON.parse('{{ top_origenes_labels|escapejs }}'),
-                    datasets: [{ label: 'Traslados', data: JSON.parse('{{ top_origenes_values|escapejs }}') }]
-                }
-            });
-        </script>
     {% else %}
         <h1>Hospital no encontrado</h1>
     {% endif %}

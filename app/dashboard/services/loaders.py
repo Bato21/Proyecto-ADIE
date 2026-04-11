@@ -16,3 +16,7 @@ def cargar_hospitales():
 def cargar_traslados():
     ruta = settings.DATA_DIR / "traslados.csv"
     return pd.read_csv(ruta)
+
+def cargar_motivo_traslado():
+    ruta = settings.DATA_DIR / "motivo_traslado.csv"
+    return pd.read_csv(ruta)
