@@ -9,10 +9,42 @@
         .contenedor { max-width: 1300px; margin: 0 auto; padding: 24px; }
         .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 10px; border-bottom: 1px solid #e8eef5; text-align: left; }
+        th, td { padding: 10px; border-bottom: 1px solid #e8eef5; text-align: left; vertical-align: top; }
         th { background: #eef4ff; }
         .small { color: #607080; font-size: 13px; }
+        .alerta {
+            background: #fff3cd;
+            border: 1px solid #ffe08a;
+            color: #6b5900;
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .info {
+            background: #eef4ff;
+            border: 1px solid #d8e6ff;
+            color: #355070;
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .kpi-titulo { color: #5c6c7d; font-size: 13px; margin-bottom: 8px; }
+        .kpi-valor { font-size: 28px; font-weight: bold; }
+        .perfil-badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            background: #eef4ff;
+            color: #2a4d7a;
+        }
+        @media (max-width: 1100px) {
+            .grid, .grid-kpi { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -21,13 +53,63 @@
     {% if encontrado %}
         <h1>{{ region.REGION }}</h1>
 
+        <div class="alerta">
+            <b>Advertencia metodológica:</b> el campo de origen de traslado presenta alta incompletitud.
+            Por eso, los traslados se usan aquí como referencia descriptiva dentro de la muestra, no como una red completa de derivación.
+        </div>
+
+        <div class="info">
+            <b>Cómo leer esta vista:</b><br>
+            Pacientes = total de casos registrados en la región.<br>
+            Casos graves = casos de mayor complejidad clínica.<br>
+            Traslados = registros presentes en la base de motivos de traslado asociados a hospitales de esta región.<br>
+            Los porcentajes permiten comparar mejor hospitales de distinto tamaño.
+        </div>
+
+        <div class="grid-kpi">
+            <div class="card">
+                <div class="kpi-titulo">Población</div>
+                <div class="kpi-valor">{{ region.poblacion }}</div>
+            </div>
+            <div class="card">
+                <div class="kpi-titulo">Casos graves</div>
+                <div class="kpi-valor">{{ region.alta }}</div>
+            </div>
+            <div class="card">
+                <div class="kpi-titulo">% graves región</div>
+                <div class="kpi-valor">{{ porcentaje_graves_region }}%</div>
+            </div>
+            <div class="card">
+                <div class="kpi-titulo">Traslados registrados por cada 100 pacientes en la región</div>
+                <div class="kpi-valor">{{ porcentaje_traslados_region }}</div>
+            </div>
+        </div>
+
+        <div class="grid-kpi">
+            <div class="card">
+                <div class="kpi-titulo">Promedio país % graves</div>
+                <div class="kpi-valor">{{ promedio_graves_pais }}%</div>
+            </div>
+            <div class="card">
+                <div class="kpi-titulo">Promedio país de traslados registrados por cada 100 pacientes</div>
+                <div class="kpi-valor">{{ promedio_traslados_pais }}</div>
+            </div>
+            <div class="card">
+                <div class="kpi-titulo">Diferencia vs país en gravedad</div>
+                <div class="kpi-valor">{{ diferencia_graves_vs_pais }} pts</div>
+            </div>
+            <div class="card">
+                <div class="kpi-titulo">Diferencia vs país en traslados</div>
+                <div class="kpi-valor">{{ diferencia_traslados_vs_pais }} pts</div>
+            </div>
+        </div>
+
         <div class="card">
-            <p><b>Población:</b> {{ region.poblacion }}</p>
-            <p><b>Casos graves:</b> {{ region.alta }}</p>
             <p><b>% graves entre pacientes:</b> {{ region.porcentaje_severidad }}%</p>
             <p><b>% población afectada:</b> {{ region.porcentaje_poblacion }}%</p>
             <p><b>Tasa por 100.000:</b> {{ region.tasa_100k }}</p>
             <p><b>Total traslados registrados:</b> {{ total_traslados }}</p>
+            <p><b>Total hospitales analizados:</b> {{ total_hospitales_region }}</p>
             <p class="small">Las severidades corresponden al total de traslados registrados en esta región, no a pacientes únicos.</p>
             <p><b>Severidad 0:</b> {{ severidad_0 }} ({{ porcentaje_sev_0 }}%)</p>
             <p><b>Severidad 1:</b> {{ severidad_1 }} ({{ porcentaje_sev_1 }}%)</p>
@@ -54,7 +136,11 @@
                     <thead><tr><th>Hospital</th><th>Graves</th><th>Pacientes</th></tr></thead>
                     <tbody>
                     {% for x in top_hospitales %}
-                        <tr><td>{{ x.NOMBRE_HOSPITAL }}</td><td>{{ x.alta }}</td><td>{{ x.total }}</td></tr>
+                        <tr>
+                            <td><a href="/analisis/hospital/{{ x.COD_HOSPITAL }}/">{{ x.NOMBRE_HOSPITAL }}</a></td>
+                            <td>{{ x.alta }}</td>
+                            <td>{{ x.total }}</td>
+                        </tr>
                     {% endfor %}
                     </tbody>
                 </table>
@@ -63,10 +149,19 @@
 
         <div class="grid">
             <div class="card">
-                <h3>Hospitales que más trasladan en la región</h3>
+                <h3>Hospitales con más traslados registrados por cada 100 pacientes en la región</h3>
+                <p class="small">El gráfico muestra cuántos traslados registrados hay por cada 100 pacientes y no solo el volumen bruto.</p>
                 <canvas id="graficoRegion"></canvas>
             </div>
 
+            <div class="card">
+                <h3>Distribución de perfiles hospitalarios</h3>
+                <p class="small">Cada perfil combina gravedad relativa y traslado relativo dentro de la región.</p>
+                <canvas id="graficoPerfiles"></canvas>
+            </div>
+        </div>
+
+        <div class="grid">
             <div class="card">
                 <h3>Top diagnósticos de traslado</h3>
                 <p class="small">Diagnóstico = problema de salud principal registrado en el caso trasladado.</p>
@@ -81,17 +176,57 @@
                     </tbody>
                 </table>
             </div>
+
+            <div class="card">
+                <h3>Resumen normalizado por hospital</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Hospital</th>
+                            <th>% graves</th>
+                            <th>Traslados por cada 100 pacientes</th>
+                            <th>Perfil</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for x in top_hospitales_normalizados %}
+                        <tr>
+                            <td><a href="/analisis/hospital/{{ x.COD_HOSPITAL }}/">{{ x.NOMBRE_HOSPITAL }}</a></td>
+                            <td>{{ x.porcentaje_graves_hospital }}%</td>
+                            <td>{{ x.porcentaje_traslados_hospital }}%</td>
+                            <td><span class="perfil-badge">{{ x.perfil }}</span></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="4">No hay datos.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <script>
             const labels = JSON.parse('{{ graf_region_labels|escapejs }}');
             const values = JSON.parse('{{ graf_region_values|escapejs }}');
+            const perfilLabels = JSON.parse('{{ graf_perfiles_labels|escapejs }}');
+            const perfilValues = JSON.parse('{{ graf_perfiles_values|escapejs }}');
 
             new Chart(document.getElementById('graficoRegion'), {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{ label: 'Traslados', data: values }]
+                    datasets: [{ label: 'Traslados registrados por cada 100 pacientes', data: values }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            new Chart(document.getElementById('graficoPerfiles'), {
+                type: 'pie',
+                data: {
+                    labels: perfilLabels,
+                    datasets: [{ data: perfilValues }]
                 },
                 options: { responsive: true }
             });

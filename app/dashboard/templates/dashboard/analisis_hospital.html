@@ -8,10 +8,34 @@
         .contenedor { max-width: 1300px; margin: 0 auto; padding: 24px; }
         .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 10px; border-bottom: 1px solid #e8eef5; text-align: left; }
+        th, td { padding: 10px; border-bottom: 1px solid #e8eef5; text-align: left; vertical-align: top; }
         th { background: #eef4ff; }
         .small { color: #607080; font-size: 13px; }
+        .alerta {
+            background: #fff3cd;
+            border: 1px solid #ffe08a;
+            color: #6b5900;
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .info {
+            background: #eef4ff;
+            border: 1px solid #d8e6ff;
+            color: #355070;
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .kpi-titulo { color: #5c6c7d; font-size: 13px; margin-bottom: 8px; }
+        .kpi-valor { font-size: 28px; font-weight: bold; }
+        @media (max-width: 1100px) {
+            .grid, .grid-kpi { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -20,13 +44,58 @@
     {% if encontrado %}
         <h1>{{ hospital.NOMBRE_HOSPITAL }}</h1>
 
+        <div class="alerta">
+            <b>Advertencia metodológica:</b> los traslados visibles aquí corresponden a registros disponibles en la muestra.
+            No deben interpretarse como el universo completo de derivaciones del hospital.
+        </div>
+
+        <div class="info">
+            <b>Interpretación automática:</b><br>
+            {{ interpretacion }}
+        </div>
+
+        <div class="grid-kpi">
+            <div class="card">
+                <div class="kpi-titulo">Pacientes</div>
+                <div class="kpi-valor">{{ hospital.total }}</div>
+            </div>
+            <div class="card">
+                <div class="kpi-titulo">Casos graves</div>
+                <div class="kpi-valor">{{ hospital.alta }}</div>
+            </div>
+            <div class="card">
+                <div class="kpi-titulo">% graves hospital</div>
+                <div class="kpi-valor">{{ pct_graves }}%</div>
+            </div>
+            <div class="card">
+                <div class="kpi-titulo">Traslados registrados por cada 100 pacientes del hospital</div>
+                <div class="kpi-valor">{{ pct_traslados }}</div>
+            </div>
+        </div>
+
+        <div class="grid-kpi">
+            <div class="card">
+                <div class="kpi-titulo">Promedio país % graves</div>
+                <div class="kpi-valor">{{ prom_graves }}%</div>
+            </div>
+            <div class="card">
+                <div class="kpi-titulo">Promedio país de traslados registrados por cada 100 pacientes</div>
+                <div class="kpi-valor">{{ prom_traslados }}</div>
+            </div>
+            <div class="card">
+                <div class="kpi-titulo">Total traslados registrados</div>
+                <div class="kpi-valor">{{ total_traslados }}</div>
+            </div>
+            <div class="card">
+                <div class="kpi-titulo">Severidad 3</div>
+                <div class="kpi-valor">{{ severidad_3 }}</div>
+            </div>
+        </div>
+
         <div class="card">
             <p><b>Comuna:</b> {{ hospital.COMUNA_GEO }}</p>
             <p><b>Región:</b> {{ hospital.REGION_GEO }}</p>
-            <p><b>Pacientes:</b> {{ hospital.total }}</p>
-            <p><b>Casos graves:</b> {{ hospital.alta }}</p>
-            <p><b>% graves:</b> {{ hospital.porcentaje }}%</p>
-            <p><b>Total traslados registrados:</b> {{ total_traslados }}</p>
+            <p><b>% graves original:</b> {{ hospital.porcentaje }}%</p>
             <p class="small">Las severidades corresponden al total de traslados registrados en este hospital, no a pacientes únicos.</p>
             <p><b>Severidad 0:</b> {{ severidad_0 }} ({{ porcentaje_sev_0 }}%)</p>
             <p><b>Severidad 1:</b> {{ severidad_1 }} ({{ porcentaje_sev_1 }}%)</p>

@@ -61,6 +61,26 @@
             font-weight: bold;
         }
 
+        .alerta {
+            background: #fff3cd;
+            border: 1px solid #ffe08a;
+            color: #6b5900;
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .info {
+            background: #eef4ff;
+            border: 1px solid #d8e6ff;
+            color: #355070;
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -92,6 +112,15 @@
             margin-top: 10px;
         }
 
+        .perfil-badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            background: #eef4ff;
+            color: #2a4d7a;
+        }
+
         @media (max-width: 1100px) {
             .grid-kpi,
             .grid-2 {
@@ -106,6 +135,19 @@
 
     <div class="titulo">Análisis global país</div>
     <div class="subtitulo">Resumen nacional de regiones, comunas, hospitales y motivos de traslado</div>
+
+    <div class="alerta">
+        <b>Advertencia metodológica:</b> los datos de <b>origen de traslado</b> presentan alta incompletitud.
+        Por eso, este tablero usa los traslados como referencia descriptiva dentro de la muestra y no como una representación completa de la red nacional.
+    </div>
+
+    <div class="info">
+        <b>Cómo leer este análisis:</b><br>
+        Pacientes = total de casos registrados.<br>
+        Casos graves = casos de mayor complejidad clínica registrados en la base consolidada.<br>
+        Traslados = registros contenidos en la base de motivos de traslado.<br>
+        Los porcentajes ayudan a comparar hospitales de distinto tamaño.
+    </div>
 
     <div class="grid-kpi">
         <div class="card">
@@ -128,19 +170,17 @@
 
     <div class="grid-kpi">
         <div class="card">
+            <div class="kpi-titulo">% graves sobre pacientes</div>
+            <div class="kpi-valor">{{ promedio_graves }}%</div>
+        </div>
+        <div class="card">
+            <div class="kpi-titulo">Traslados registrados por cada 100 pacientes</div>
+            <div class="kpi-valor">{{ promedio_traslados }}</div>
+        </div>
+        <div class="card">
             <div class="kpi-titulo">Severidad 0</div>
             <div class="kpi-valor">{{ severidad_0 }}</div>
             <div class="small">{{ porcentaje_sev_0 }}% de los traslados</div>
-        </div>
-        <div class="card">
-            <div class="kpi-titulo">Severidad 1</div>
-            <div class="kpi-valor">{{ severidad_1 }}</div>
-            <div class="small">{{ porcentaje_sev_1 }}% de los traslados</div>
-        </div>
-        <div class="card">
-            <div class="kpi-titulo">Severidad 2</div>
-            <div class="kpi-valor">{{ severidad_2 }}</div>
-            <div class="small">{{ porcentaje_sev_2 }}% de los traslados</div>
         </div>
         <div class="card">
             <div class="kpi-titulo">Severidad 3</div>
@@ -149,7 +189,9 @@
         </div>
     </div>
 
-    <div class="small">Las severidades corresponden al total de traslados registrados en el dataset de motivos de traslado, no a pacientes únicos.</div>
+    <div class="small">
+        Las severidades corresponden al total de traslados registrados en el dataset de motivos de traslado, no a pacientes únicos.
+    </div>
 
     <div class="grid-2">
         <div class="card">
@@ -164,9 +206,21 @@
 
     <div class="grid-2">
         <div class="card">
-            <h3>Hospitales que más trasladan</h3>
-            <canvas id="graficoHospTras"></canvas>
+            <h3>Hospitales con más traslados registrados por cada 100 pacientes</h3>
+<p class="small">
+Este gráfico muestra el porcentaje de casos que terminan en traslado dentro de cada hospital.
+Se calcula como la proporción de eventos que finalizan en derivación respecto del total de eventos registrados,
+permitiendo comparar hospitales de distinto tamaño de forma justa.
+</p>            <canvas id="graficoHospTras"></canvas>
         </div>
+        <div class="card">
+            <h3>Distribución de perfiles hospitalarios</h3>
+            <p class="small">Los perfiles agrupan hospitales según su proporción relativa de gravedad y traslados.</p>
+            <canvas id="graficoPerfiles"></canvas>
+        </div>
+    </div>
+
+    <div class="grid-2">
         <div class="card">
             <h3>Top diagnósticos de traslado</h3>
             <p class="small">Diagnóstico = problema de salud principal registrado en el caso trasladado.</p>
@@ -182,6 +236,34 @@
                     <tr>
                         <td>{{ x.diagnostico }}</td>
                         <td>{{ x.cantidad }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2">No hay datos registrados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>Perfiles detectados</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Perfil</th>
+                        <th>Cantidad de hospitales</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for x in perfiles %}
+                    <tr>
+                        <td><span class="perfil-badge">{{ x.perfil }}</span></td>
+                        <td>{{ x.cantidad }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2">No hay perfiles calculados.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -259,19 +341,28 @@
         </div>
 
         <div class="card">
-            <h3>Top hospitales que más trasladan</h3>
+            <h3>Top hospitales con mayor % de traslados</h3>
             <table>
                 <thead>
                     <tr>
                         <th>Hospital</th>
+                        <th>Traslados por cada 100 pacientes</th>
                         <th>Traslados</th>
+                        <th>Pacientes</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for x in top_hospitales_trasladan %}
+                    {% for x in top_hospitales_normalizados %}
                     <tr>
-                        <td><a href="/analisis/hospital/{{ x.cod_hospital }}/">{{ x.hospital }}</a></td>
-                        <td>{{ x.cantidad }}</td>
+                        <td><a href="/analisis/hospital/{{ x.COD_HOSPITAL }}/">{{ x.NOMBRE_HOSPITAL }}</a></td>
+                        <td>{{ x.pct_traslados }}%</td>
+                        <td>{{ x.pct_traslados }}%</td>
+                        <td>{{ x.total }}</td>
+                        <td>{{ x.total }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">No hay datos disponibles.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -314,15 +405,28 @@ new Chart(document.getElementById('graficoComunas'), {
 new Chart(document.getElementById('graficoHospTras'), {
     type: 'bar',
     data: {
-        labels: JSON.parse('{{ graf_hosp_tras_labels|escapejs }}'),
+        labels: JSON.parse('{{ graf_hosp_labels|escapejs }}'),
         datasets: [{
-            label: 'Traslados',
-            data: JSON.parse('{{ graf_hosp_tras_values|escapejs }}')
+            label: 'Traslados registrados por cada 100 pacientes',
+            data: JSON.parse('{{ graf_hosp_values|escapejs }}')
         }]
     },
     options: {
         responsive: true,
         plugins: { legend: { display: false } }
+    }
+});
+
+new Chart(document.getElementById('graficoPerfiles'), {
+    type: 'pie',
+    data: {
+        labels: JSON.parse('{{ graf_perfiles_labels|escapejs }}'),
+        datasets: [{
+            data: JSON.parse('{{ graf_perfiles_values|escapejs }}')
+        }]
+    },
+    options: {
+        responsive: true
     }
 });
 </script>
