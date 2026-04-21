@@ -61,6 +61,35 @@ def texto_interpretacion_hospital(nombre_hospital, pct_graves, pct_traslados, pr
     )
 
 
+def filtrar_hospitales_por_region(df_hospitales, nombre_region):
+    nombre_region = str(nombre_region).strip().upper()
+    region_geo_up = df_hospitales["REGION_GEO"].fillna("").astype(str).str.upper()
+
+    mapa_region = {
+        "ARICA Y PARINACOTA": ["ARICA", "PARINACOTA"],
+        "TARAPACA": ["TARAPACA"],
+        "ANTOFAGASTA": ["ANTOFAGASTA"],
+        "ATACAMA": ["ATACAMA"],
+        "COQUIMBO": ["COQUIMBO"],
+        "VALPARAISO": ["VALPARAISO"],
+        "OHIGGINS": ["OHIGGINS", "LIBERTADOR", "BERNARDO"],
+        "O HIGGINS": ["OHIGGINS", "LIBERTADOR", "BERNARDO"],
+        "MAULE": ["MAULE"],
+        "NUBLE": ["NUBLE"],
+        "BIOBIO": ["BIOBIO"],
+        "ARAUCANIA": ["ARAUCANIA"],
+        "LOS RIOS": ["LOS RIOS"],
+        "LOS LAGOS": ["LOS LAGOS"],
+        "AYSEN": ["AYSEN", "AISEN"],
+        "MAGALLANES": ["MAGALLANES"],
+        "METROPOLITANA": ["METROPOLITANA", "SANTIAGO"],
+    }
+
+    claves = mapa_region.get(nombre_region, [nombre_region])
+    mask = region_geo_up.apply(lambda x: any(clave in x for clave in claves))
+    return df_hospitales[mask].copy()
+
+
 def home(request):
     df_region = cargar_severidad_region()
     regiones = df_region.to_dict(orient="records")
@@ -93,7 +122,14 @@ def api_comunas(request, codregion):
     except FileNotFoundError:
         geojson = None
 
+    nombre_region = ""
+    if not df_region.empty and "REGION_GEOJSON" in df_region.columns:
+        nombre_region = str(df_region["REGION_GEOJSON"].iloc[0]).strip().upper()
+
     df_hospitales = df_hospitales.dropna(subset=["LAT_GEO", "LON_GEO"]).copy()
+    if nombre_region:
+        df_hospitales = filtrar_hospitales_por_region(df_hospitales, nombre_region)
+
     hospitales = df_hospitales.to_dict(orient="records")
 
     return JsonResponse({
@@ -176,37 +212,11 @@ def analisis_region(request, codregion):
     comunas_region = df_comuna[df_comuna["codregion"] == int(codregion)].copy()
     top_comunas = comunas_region.sort_values("alta", ascending=False).head(10)
 
-    df_hospitales["REGION_GEO_UP"] = df_hospitales["REGION_GEO"].fillna("").astype(str).str.upper()
     df_hospitales["COD_HOSPITAL"] = pd.to_numeric(df_hospitales["COD_HOSPITAL"], errors="coerce")
     df_hospitales["total"] = pd.to_numeric(df_hospitales["total"], errors="coerce").fillna(0)
     df_hospitales["alta"] = pd.to_numeric(df_hospitales["alta"], errors="coerce").fillna(0)
     df_hospitales["porcentaje_traslado"] = pd.to_numeric(df_hospitales["porcentaje_traslado"], errors="coerce").fillna(0)
-
-    mapa_region = {
-        "ARICA Y PARINACOTA": ["ARICA", "PARINACOTA"],
-        "TARAPACA": ["TARAPACA"],
-        "ANTOFAGASTA": ["ANTOFAGASTA"],
-        "ATACAMA": ["ATACAMA"],
-        "COQUIMBO": ["COQUIMBO"],
-        "VALPARAISO": ["VALPARAISO"],
-        "OHIGGINS": ["OHIGGINS", "LIBERTADOR", "BERNARDO"],
-        "O HIGGINS": ["OHIGGINS", "LIBERTADOR", "BERNARDO"],
-        "MAULE": ["MAULE"],
-        "NUBLE": ["NUBLE"],
-        "BIOBIO": ["BIOBIO"],
-        "ARAUCANIA": ["ARAUCANIA"],
-        "LOS RIOS": ["LOS RIOS"],
-        "LOS LAGOS": ["LOS LAGOS"],
-        "AYSEN": ["AYSEN", "AISEN"],
-        "MAGALLANES": ["MAGALLANES"],
-        "METROPOLITANA": ["METROPOLITANA", "SANTIAGO"],
-    }
-
-    claves = mapa_region.get(nombre_region, [nombre_region])
-
-    hospitales_region = df_hospitales[
-        df_hospitales["REGION_GEO_UP"].apply(lambda x: any(clave in x for clave in claves))
-    ].copy()
+    hospitales_region = filtrar_hospitales_por_region(df_hospitales, nombre_region)
 
     top_hospitales = hospitales_region.sort_values("alta", ascending=False).head(10)
 
@@ -494,7 +504,22 @@ def analisis_pais(request):
 
     hospitales["pct_graves"] = hospitales.apply(lambda x: safe_pct(x["alta"], x["total"]), axis=1)
     hospitales["pct_traslados"] = hospitales["porcentaje_traslado"]
-    hospitales["pct_traslados"] = hospitales["porcentaje_traslado"]
+
+    hospitales = hospitales.merge(
+        traslados_por_hospital,
+        left_on="COD_HOSPITAL",
+        right_on="cod_hospital",
+        how="left",
+        suffixes=("", "_motivo"),
+    )
+
+    # `hospitales.csv` puede traer `traslados`; el merge agrega `traslados_motivo` cuando aplica.
+    if "traslados_motivo" in hospitales.columns:
+        hospitales["traslados"] = pd.to_numeric(hospitales["traslados_motivo"], errors="coerce").fillna(0).astype(int)
+    elif "traslados" in hospitales.columns:
+        hospitales["traslados"] = pd.to_numeric(hospitales["traslados"], errors="coerce").fillna(0).astype(int)
+    else:
+        hospitales["traslados"] = 0
 
     umbral_graves = hospitales["pct_graves"].median() if not hospitales.empty else 0
     umbral_traslados = hospitales["pct_traslados"].median() if not hospitales.empty else 0

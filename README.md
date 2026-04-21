@@ -33,6 +33,36 @@ Los datos utilizados en esta investigación corresponden a las bases de datos ma
 
 **https://public.tableau.com/views/PropuestaTableroGRD/PropuestaTableroGRD?%3AshowVizHome=no#1**
 
+## Estructura del proyecto
+
+La organización actual separa el trabajo en cuatro zonas principales:
+
+* `app/`: backend Django, con `manage.py`, configuración del proyecto y la app `dashboard`.
+* `data/`: insumos crudos y salidas procesadas para análisis y visualización.
+* `docs/`: guía operativa y notas de arranque del proyecto.
+* `notebooks/`: exploración y análisis en Jupyter.
+* `scripts/`: espacio reservado para automatizar limpieza, carga o generación de datos derivados.
+
+### Flujo sugerido
+1. Revisar `docs/INICIO.txt` para la ejecución rápida.
+2. Usar `notebooks/00_pipeline_maestra_grd_2024.ipynb` como referencia consolidada si quieres revisar todo el flujo en un solo lugar.
+3. Trabajar por etapas en `notebooks/01_carga_limpieza_base_grd_2024.ipynb`, `notebooks/02_analisis_regional_severidad_grd_2024.ipynb`, `notebooks/03_analisis_comunal_hospitalario_grd_2024.ipynb` y `notebooks/04_exportacion_traslados_django_grd_2024.ipynb`.
+4. Dejar los procesos reutilizables en `scripts/grd_common.py`.
+5. Consumir los datos finales desde `data/processed/` dentro del dashboard Django.
+
+### Validación de reestructuración
+Para validar que la nueva estructura mantiene funcionalidad (notebooks, artefactos y Django), ejecutar desde la raíz del repositorio:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validar_reestructuracion.ps1
+```
+
+Opciones útiles:
+- Omitir notebooks: `-SkipNotebooks`
+- Omitir validación de CSV: `-SkipArtifacts`
+- Omitir tests Django: `-SkipDjango`
+- Ajustar timeout por notebook (segundos): `-NotebookTimeout 3600`
+
 ---
 
 **Autores:** Benjamín Pinto, Sebastían Ruiz, Baptiste Vial  

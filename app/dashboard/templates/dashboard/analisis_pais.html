@@ -131,7 +131,7 @@
 </head>
 <body>
 <div class="contenedor">
-    <a href="/" class="boton">← Volver al mapa</a>
+    <a href="{% url 'home' %}" class="boton">← Volver al mapa</a>
 
     <div class="titulo">Análisis global país</div>
     <div class="subtitulo">Resumen nacional de regiones, comunas, hospitales y motivos de traslado</div>
@@ -307,7 +307,7 @@ permitiendo comparar hospitales de distinto tamaño de forma justa.
                 <tbody>
                     {% for x in top_hospitales_graves %}
                     <tr>
-                        <td><a href="/analisis/hospital/{{ x.COD_HOSPITAL }}/">{{ x.NOMBRE_HOSPITAL }}</a></td>
+                        <td><a href="{% url 'analisis_hospital' x.COD_HOSPITAL %}">{{ x.NOMBRE_HOSPITAL }}</a></td>
                         <td>{{ x.alta }}</td>
                         <td>{{ x.total }}</td>
                     </tr>
@@ -354,10 +354,9 @@ permitiendo comparar hospitales de distinto tamaño de forma justa.
                 <tbody>
                     {% for x in top_hospitales_normalizados %}
                     <tr>
-                        <td><a href="/analisis/hospital/{{ x.COD_HOSPITAL }}/">{{ x.NOMBRE_HOSPITAL }}</a></td>
+                        <td><a href="{% url 'analisis_hospital' x.COD_HOSPITAL %}">{{ x.NOMBRE_HOSPITAL }}</a></td>
                         <td>{{ x.pct_traslados }}%</td>
-                        <td>{{ x.pct_traslados }}%</td>
-                        <td>{{ x.total }}</td>
+                        <td>{{ x.traslados }}</td>
                         <td>{{ x.total }}</td>
                     </tr>
                     {% empty %}

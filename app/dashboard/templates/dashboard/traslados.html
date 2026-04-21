@@ -110,8 +110,8 @@
                     {% endfor %}
                 </select>
                 <button type="submit">Aplicar</button>
-                <a href="/traslados/" class="boton">Limpiar</a>
-                <a href="/" class="boton">Volver al mapa</a>
+                <a href="{% url 'vista_traslados' %}" class="boton">Limpiar</a>
+                <a href="{% url 'home' %}" class="boton">Volver al mapa</a>
             </form>
         </div>
 

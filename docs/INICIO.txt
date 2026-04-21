@@ -1,0 +1,19 @@
+Como probarlo en Windows PowerShell:
+
+1. Entrar al proyecto y abrir una terminal PowerShell.
+2. Si tu prompt muestra (venv), ejecutar primero:
+   deactivate
+3. Crear un entorno virtual local para Windows con Python del sistema:
+   cd app
+   py -3 -m venv .venv
+4. Activar el entorno:
+   . .\.venv\Scripts\Activate.ps1
+5. Instalar dependencias del backend:
+   python -m pip install --upgrade pip
+   python -m pip install -r requirements.txt
+6. Levantar Django con:
+   python manage.py runserver
+
+Nota:
+- La carpeta app/venv incluida en el repositorio fue generada fuera de Windows y puede causar errores o popups al ejecutar pip/python.
+- Usa siempre el entorno local app/.venv en Windows.

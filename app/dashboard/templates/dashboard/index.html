@@ -125,7 +125,7 @@
     <div class="sidebar">
         <div class="titulo">Proyecto ADIE</div>
         <div style="margin-bottom:14px;">
-    <a href="/analisis/pais/" class="btn-accion">Ver análisis global país</a>
+    <a href="{% url 'analisis_pais' %}" class="btn-accion">Ver análisis global país</a>
 </div>
 
         <div class="info" id="info-region">
@@ -159,6 +159,17 @@
 <script>
 const regiones = JSON.parse('{{ regiones_json|escapejs }}');
 const geojsonChile = JSON.parse('{{ geojson_chile_json|escapejs }}');
+const ROUTES = {
+    analisisRegion: "{% url 'analisis_region' 999999 %}",
+    analisisComuna: "{% url 'analisis_comuna' 999999 %}",
+    analisisHospital: "{% url 'analisis_hospital' 999999 %}",
+    apiComunas: "{% url 'api_comunas' 999999 %}",
+    apiTraslados: "{% url 'api_traslados' %}"
+};
+
+function buildRoute(routeTemplate, idValue) {
+    return routeTemplate.replace("999999", String(idValue));
+}
 
 const mapa = L.map('mapa').setView([-35.7, -71.5], 4);
 
@@ -239,7 +250,7 @@ function mostrarRegion(d) {
     `;
 
     accionesRegionComuna.innerHTML = `
-        <a href="/analisis/region/${d.codregion}/" class="btn-accion">Ver análisis completo de la región</a>
+        <a href="${buildRoute(ROUTES.analisisRegion, d.codregion)}" class="btn-accion">Ver análisis completo de la región</a>
     `;
 }
 
@@ -261,7 +272,7 @@ function mostrarHospital(h) {
     `;
 
     accionesHospital.innerHTML = `
-        <a href="/analisis/hospital/${h.COD_HOSPITAL}/" class="btn-accion">Ver análisis completo del hospital</a>
+        <a href="${buildRoute(ROUTES.analisisHospital, h.COD_HOSPITAL)}" class="btn-accion">Ver análisis completo del hospital</a>
     `;
 }
 
@@ -394,7 +405,7 @@ function onEachRegion(feature, layer) {
 }
 
 function cargarComunasYHospitales(cod) {
-    fetch(`/api/comunas/${cod}/`)
+    fetch(buildRoute(ROUTES.apiComunas, cod))
         .then(r => r.json())
         .then(data => {
             const comunas = data.comunas || [];
@@ -435,8 +446,8 @@ function cargarComunasYHospitales(cod) {
                             comunaSeleccionada = d;
 
                             accionesRegionComuna.innerHTML = `
-                                <a href="/analisis/region/${d.codregion}/" class="btn-accion">Ver análisis completo de la región</a>
-                                <a href="/analisis/comuna/${d.cod_comuna}/" class="btn-accion">Ver análisis completo de la comuna</a>
+                                <a href="${buildRoute(ROUTES.analisisRegion, d.codregion)}" class="btn-accion">Ver análisis completo de la región</a>
+                                <a href="${buildRoute(ROUTES.analisisComuna, d.cod_comuna)}" class="btn-accion">Ver análisis completo de la comuna</a>
                             `;
 
                             layer.bindPopup(`
@@ -527,7 +538,7 @@ function cargarComunasYHospitales(cod) {
 }
 
 function cargarTraslados() {
-    fetch('/api/traslados/')
+    fetch(ROUTES.apiTraslados)
         .then(r => r.json())
         .then(data => {
             trasladosGlobal = data.traslados || [];

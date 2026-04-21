@@ -14,7 +14,7 @@
 </head>
 <body>
 <div class="contenedor">
-    <a href="/">← Volver al mapa</a>
+    <a href="{% url 'home' %}">← Volver al mapa</a>
     {% if encontrado %}
         <h1>{{ comuna.COMUNA_GEOJSON }}</h1>
         <div class="card">
