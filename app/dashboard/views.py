@@ -468,6 +468,7 @@ def analisis_pais(request):
     df_hospitales["alta"] = pd.to_numeric(df_hospitales["alta"], errors="coerce").fillna(0)
     df_hospitales["porcentaje_traslado"] = pd.to_numeric(df_hospitales["porcentaje_traslado"], errors="coerce").fillna(0)
 
+    df_motivo = df_motivo[df_motivo['año'] == 2024]
     df_motivo["cod_hospital"] = pd.to_numeric(df_motivo["cod_hospital"], errors="coerce")
     df_motivo["severidad"] = pd.to_numeric(df_motivo["severidad"], errors="coerce")
     df_motivo["diagnostico"] = df_motivo["diagnostico"].fillna("Sin registro").astype(str)
