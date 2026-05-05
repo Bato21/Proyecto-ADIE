@@ -9,6 +9,8 @@ from .services.loaders import (
     cargar_hospitales,
     cargar_traslados,
     cargar_motivo_traslado,
+    cargar_CIE9,
+    cargar_CIE10
 )
 
 
@@ -155,6 +157,8 @@ def analisis_region(request, codregion):
     df_comuna = cargar_severidad_comuna().copy()
     df_hospitales = cargar_hospitales().copy()
     df_motivo = cargar_motivo_traslado().copy()
+    df_cie9 = cargar_CIE9()
+    df_cie10 = cargar_CIE10()
 
     fila = df_region[df_region["codregion"] == int(codregion)].copy()
     if fila.empty:
@@ -210,6 +214,7 @@ def analisis_region(request, codregion):
 
     top_hospitales = hospitales_region.sort_values("alta", ascending=False).head(10)
 
+    df_motivo = df_motivo[df_motivo['año'] == 2024]
     df_motivo["cod_hospital"] = pd.to_numeric(df_motivo["cod_hospital"], errors="coerce")
     df_motivo["severidad"] = pd.to_numeric(df_motivo["severidad"], errors="coerce")
     df_motivo["diagnostico"] = df_motivo["diagnostico"].fillna("Sin registro").astype(str)
@@ -235,6 +240,29 @@ def analisis_region(request, codregion):
         .sort_values("cantidad", ascending=False)
         .head(10)
     ) if not motivo_region.empty else pd.DataFrame(columns=["diagnostico", "cantidad"])
+
+    if not top_diagnosticos.empty and not df_cie10.empty:
+        # Asegurar que ambos lados sean strings limpios para que el match funcione perfecto
+        df_cie10["Código"] = df_cie10["Código"].astype(str).str.strip()
+        top_diagnosticos["diagnostico"] = top_diagnosticos["diagnostico"].astype(str).str.strip()
+
+        # Realizamos el cruce (left join)
+        top_diagnosticos = top_diagnosticos.merge(
+            df_cie10[["Código", "Descripción"]],
+            left_on="diagnostico",
+            right_on="Código",
+            how="left"
+        )
+        
+        # Si no encuentra el código en el diccionario CIE10, rellenamos con el código original
+        top_diagnosticos["Descripción"] = top_diagnosticos["Descripción"].fillna(top_diagnosticos["diagnostico"])
+        
+        # Renombramos a 'nombre_diagnostico' y borramos la columna 'Código' que ya no sirve
+        top_diagnosticos.rename(columns={"Descripción": "nombre_diagnostico"}, inplace=True)
+        top_diagnosticos.drop(columns=["Código"], inplace=True, errors="ignore")
+    else:
+        # Si está vacío, simplemente replicamos la columna para mantener la estructura
+        top_diagnosticos["nombre_diagnostico"] = top_diagnosticos["diagnostico"]
 
     traslados_por_hospital = (
         motivo_region.groupby(["cod_hospital", "hospital"], as_index=False)
@@ -361,6 +389,8 @@ def analisis_hospital(request, cod_hospital):
     df_hospitales = cargar_hospitales().copy()
     df_motivo = cargar_motivo_traslado().copy()
     df_region = cargar_severidad_region().copy()
+    df_cie10 = cargar_CIE10()
+    df_cie9 = cargar_CIE9()
 
     df_hospitales["COD_HOSPITAL"] = pd.to_numeric(df_hospitales["COD_HOSPITAL"], errors="coerce")
     df_hospitales["total"] = pd.to_numeric(df_hospitales["total"], errors="coerce").fillna(0)
@@ -373,6 +403,7 @@ def analisis_hospital(request, cod_hospital):
 
     h = fila.iloc[0].to_dict()
 
+    df_motivo = df_motivo[df_motivo['año'] == 2024]
     df_motivo["cod_hospital"] = pd.to_numeric(df_motivo["cod_hospital"], errors="coerce")
     df_motivo["severidad"] = pd.to_numeric(df_motivo["severidad"], errors="coerce")
     df_motivo["diagnostico"] = df_motivo["diagnostico"].fillna("Sin registro").astype(str)
@@ -399,6 +430,29 @@ def analisis_hospital(request, cod_hospital):
         .head(10)
     ) if not motivo_hospital.empty else pd.DataFrame(columns=["diagnostico", "cantidad"])
 
+    if not top_diagnosticos.empty and not df_cie10.empty:
+        # Asegurar que ambos lados sean strings limpios para que el match funcione perfecto
+        df_cie10["Código"] = df_cie10["Código"].astype(str).str.strip()
+        top_diagnosticos["diagnostico"] = top_diagnosticos["diagnostico"].astype(str).str.strip()
+
+        # Realizamos el cruce (left join)
+        top_diagnosticos = top_diagnosticos.merge(
+            df_cie10[["Código", "Descripción"]],
+            left_on="diagnostico",
+            right_on="Código",
+            how="left"
+        )
+        
+        # Si no encuentra el código en el diccionario CIE10, rellenamos con el código original
+        top_diagnosticos["Descripción"] = top_diagnosticos["Descripción"].fillna(top_diagnosticos["diagnostico"])
+        
+        # Renombramos a 'nombre_diagnostico' y borramos la columna 'Código' que ya no sirve
+        top_diagnosticos.rename(columns={"Descripción": "nombre_diagnostico"}, inplace=True)
+        top_diagnosticos.drop(columns=["Código"], inplace=True, errors="ignore")
+    else:
+        # Si está vacío, simplemente replicamos la columna para mantener la estructura
+        top_diagnosticos["nombre_diagnostico"] = top_diagnosticos["diagnostico"]
+
     top_procedimientos = (
         motivo_hospital.groupby("procedimiento", as_index=False)
         .size()
@@ -407,6 +461,45 @@ def analisis_hospital(request, cod_hospital):
         .head(10)
     ) if not motivo_hospital.empty else pd.DataFrame(columns=["procedimiento", "cantidad"])
 
+
+    if not top_procedimientos.empty and not df_cie9.empty:
+        # Asegurar que ambos lados sean strings limpios
+        df_cie9["Código"] = df_cie9["Código"].astype(str).str.strip()
+        top_procedimientos["procedimiento"] = top_procedimientos["procedimiento"].astype(str).str.strip()
+
+        # ---------------------------------------------------------
+        # NORMALIZACIÓN DE CÓDIGOS (Eliminar ceros a la derecha después del punto)
+        # Ej: "93.90" -> "93.9", "93.00" -> "93", "01.01" -> "01.01"
+        # ---------------------------------------------------------
+        df_cie9["codigo_match"] = df_cie9["Código"].apply(
+            lambda x: x.rstrip('0').rstrip('.') if '.' in x else x
+        )
+        top_procedimientos["proc_match"] = top_procedimientos["procedimiento"].apply(
+            lambda x: x.rstrip('0').rstrip('.') if '.' in x else x
+        )
+
+        # Para evitar que se multipliquen filas si el diccionario original 
+        # tenía tanto "93.90" como "93.9", quitamos duplicados en la columna de match
+        diccionario_cie9_unico = df_cie9[["codigo_match", "Descripción"]].drop_duplicates(subset=["codigo_match"])
+
+        # Realizamos el cruce (left join) usando las columnas normalizadas
+        top_procedimientos = top_procedimientos.merge(
+            diccionario_cie9_unico,
+            left_on="proc_match",
+            right_on="codigo_match",
+            how="left"
+        )
+        
+        # Si no encuentra el código en el diccionario, rellenamos con el código original
+        top_procedimientos["Descripción"] = top_procedimientos["Descripción"].fillna(top_procedimientos["procedimiento"])
+        
+        # Renombramos a 'nombre_procedimiento' y borramos las columnas temporales
+        top_procedimientos.rename(columns={"Descripción": "nombre_procedimiento"}, inplace=True)
+        top_procedimientos.drop(columns=["codigo_match", "proc_match"], inplace=True, errors="ignore")
+    else:
+        # Si está vacío, replicamos la columna para evitar errores en la vista
+        top_procedimientos["nombre_procedimiento"] = top_procedimientos["procedimiento"]
+    
     df_region["alta"] = pd.to_numeric(df_region["alta"], errors="coerce").fillna(0)
     df_region["total"] = pd.to_numeric(df_region["total"], errors="coerce").fillna(0)
 
@@ -459,6 +552,7 @@ def analisis_pais(request):
     df_comuna = cargar_severidad_comuna().copy()
     df_hospitales = cargar_hospitales().copy()
     df_motivo = cargar_motivo_traslado().copy()
+    df_cie10 = cargar_CIE10()
 
     df_region["alta"] = pd.to_numeric(df_region["alta"], errors="coerce").fillna(0)
     df_region["total"] = pd.to_numeric(df_region["total"], errors="coerce").fillna(0)
@@ -515,6 +609,7 @@ def analisis_pais(request):
     top_hospitales_normalizados = top_hospitales_normalizados.sort_values(
         ["pct_traslados", "total"], ascending=False
     ).head(10)
+    print(top_hospitales_normalizados.iloc[1])
 
     top_diagnosticos = (
         df_motivo.groupby("diagnostico", as_index=False)
@@ -524,6 +619,29 @@ def analisis_pais(request):
         .head(10)
         .copy()
     ) if not df_motivo.empty else pd.DataFrame(columns=["diagnostico", "cantidad"])
+
+    if not top_diagnosticos.empty and not df_cie10.empty:
+        # Asegurar que ambos lados sean strings limpios para que el match funcione perfecto
+        df_cie10["Código"] = df_cie10["Código"].astype(str).str.strip()
+        top_diagnosticos["diagnostico"] = top_diagnosticos["diagnostico"].astype(str).str.strip()
+
+        # Realizamos el cruce (left join)
+        top_diagnosticos = top_diagnosticos.merge(
+            df_cie10[["Código", "Descripción"]],
+            left_on="diagnostico",
+            right_on="Código",
+            how="left"
+        )
+        
+        # Si no encuentra el código en el diccionario CIE10, rellenamos con el código original
+        top_diagnosticos["Descripción"] = top_diagnosticos["Descripción"].fillna(top_diagnosticos["diagnostico"])
+        
+        # Renombramos a 'nombre_diagnostico' y borramos la columna 'Código' que ya no sirve
+        top_diagnosticos.rename(columns={"Descripción": "nombre_diagnostico"}, inplace=True)
+        top_diagnosticos.drop(columns=["Código"], inplace=True, errors="ignore")
+    else:
+        # Si está vacío, simplemente replicamos la columna para mantener la estructura
+        top_diagnosticos["nombre_diagnostico"] = top_diagnosticos["diagnostico"]
 
     severidad_0 = int((df_motivo["severidad"] == 0).sum())
     severidad_1 = int((df_motivo["severidad"] == 1).sum())
