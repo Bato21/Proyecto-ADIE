@@ -234,7 +234,7 @@ permitiendo comparar hospitales de distinto tamaño de forma justa.
                 <tbody>
                     {% for x in top_diagnosticos %}
                     <tr>
-                        <td>{{ x.diagnostico }}</td>
+                        <td>{{ x.nombre_diagnostico }}</td>
                         <td>{{ x.cantidad }}</td>
                     </tr>
                     {% empty %}
@@ -355,9 +355,8 @@ permitiendo comparar hospitales de distinto tamaño de forma justa.
                     {% for x in top_hospitales_normalizados %}
                     <tr>
                         <td><a href="/analisis/hospital/{{ x.COD_HOSPITAL }}/">{{ x.NOMBRE_HOSPITAL }}</a></td>
-                        <td>{{ x.pct_traslados }}%</td>
-                        <td>{{ x.pct_traslados }}%</td>
-                        <td>{{ x.total }}</td>
+                        <td>{{ x.pct_traslados }}</td>
+                        <td>{{ x.traslados }}</td>
                         <td>{{ x.total }}</td>
                     </tr>
                     {% empty %}
