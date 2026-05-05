@@ -20,3 +20,11 @@ def cargar_traslados():
 def cargar_motivo_traslado():
     ruta = settings.DATA_DIR / "motivo_traslado.csv"
     return pd.read_csv(ruta)
+
+def cargar_CIE9():
+    ruta = settings.DATA_DIR / "CIE-9.xlsx"
+    return pd.read_excel(ruta)
+
+def cargar_CIE10():
+    ruta = settings.DATA_DIR / "CIE-10.xlsx"
+    return pd.read_excel(ruta)
