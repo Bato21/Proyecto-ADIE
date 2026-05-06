@@ -169,7 +169,7 @@
                     <thead><tr><th>Diagnóstico</th><th>Cantidad</th></tr></thead>
                     <tbody>
                     {% for x in top_diagnosticos %}
-                        <tr><td>{{ x.diagnostico }}</td><td>{{ x.cantidad }}</td></tr>
+                        <tr><td>{{ x.nombre_diagnostico }}</td><td>{{ x.cantidad }}</td></tr>
                     {% empty %}
                         <tr><td colspan="2">No hay datos.</td></tr>
                     {% endfor %}
