@@ -111,7 +111,7 @@
                     <thead><tr><th>Diagnóstico</th><th>Cantidad</th></tr></thead>
                     <tbody>
                     {% for x in top_diagnosticos %}
-                        <tr><td>{{ x.diagnostico }}</td><td>{{ x.cantidad }}</td></tr>
+                        <tr><td>{{ x.nombre_diagnostico }}</td><td>{{ x.cantidad }}</td></tr>
                     {% empty %}
                         <tr><td colspan="2">No hay diagnósticos registrados.</td></tr>
                     {% endfor %}
@@ -126,7 +126,7 @@
                     <thead><tr><th>Procedimiento</th><th>Cantidad</th></tr></thead>
                     <tbody>
                     {% for x in top_procedimientos %}
-                        <tr><td>{{ x.procedimiento }}</td><td>{{ x.cantidad }}</td></tr>
+                        <tr><td>{{ x.nombre_procedimiento }}</td><td>{{ x.cantidad }}</td></tr>
                     {% empty %}
                         <tr><td colspan="2">No hay procedimientos registrados.</td></tr>
                     {% endfor %}
