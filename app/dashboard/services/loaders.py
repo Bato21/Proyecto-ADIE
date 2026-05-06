@@ -23,8 +23,8 @@ def cargar_motivo_traslado():
 
 def cargar_CIE9():
     ruta = settings.DATA_DIR / "CIE-9.xlsx"
-    return pd.read_excel(ruta)
+    return pd.read_excel(ruta, dtype=str)
 
 def cargar_CIE10():
     ruta = settings.DATA_DIR / "CIE-10.xlsx"
-    return pd.read_excel(ruta)
+    return pd.read_excel(ruta, dtype=str)
